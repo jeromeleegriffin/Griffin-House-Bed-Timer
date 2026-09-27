@@ -208,7 +208,35 @@
       border-radius: 0.8vh;
       letter-spacing: 0.12em;
     }
-    #tin { min-width: 28vw; }
+    #tin { min-width: 22vw; flex: 1 1 auto; }
+    .ampm-set {
+      display: flex;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 0.7vh;
+      overflow: hidden;
+      background: #10162c;
+    }
+    .ampm-set button {
+      min-width: 11.5vw;
+      min-height: 4.4vh;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: clamp(13px, 1.7vh, 16px);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    #amset.on {
+      background: #1e3a66;
+      color: #9fd0ff;
+    }
+    #pmset.on {
+      background: #3d2f0e;
+      color: #ffd36a;
+    }
     #saytext {
       flex: 1 1 auto;
       width: 100%;
@@ -332,12 +360,24 @@
     .clock { flex: 0 0 auto; }
     .ampm {
       flex: 0 0 auto;
-      font-size: clamp(14px, 2.1vh, 22px);
+      font-size: clamp(11px, 1.55vh, 15px);
       font-weight: 800;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       line-height: 1;
-      padding: 0;
+      padding: 0.28vh 1.3vw;
       margin: 0;
+      border-radius: 0.45vh;
+      border: 1px solid transparent;
+    }
+    .ampm.am {
+      color: #9fd0ff;
+      background: #1a2c4a;
+      border-color: #2b4a78;
+    }
+    .ampm.pm {
+      color: #ffd36a;
+      background: #3a2d0e;
+      border-color: #6a5418;
     }
     .bedtag {
       flex: 0 0 auto;
@@ -443,6 +483,10 @@
       <div class="row">
         <label class="k" for="tin">Start</label>
         <input id="tin" type="time" />
+        <div class="ampm-set" role="group" aria-label="AM or PM">
+          <button type="button" id="amset">AM</button>
+          <button type="button" id="pmset">PM</button>
+        </div>
         <button id="go" type="button">Set</button>
         <button id="nowbtn" type="button">Now</button>
       </div>
@@ -1062,6 +1106,29 @@
       return base;
     }
 
+    const amset = document.getElementById("amset");
+    const pmset = document.getElementById("pmset");
+    function paintAmPmSet() {
+      const parts = (tin.value || "").split(":");
+      const h = parseInt(parts[0], 10);
+      const am = !Number.isFinite(h) || h < 12;
+      amset.classList.toggle("on", am);
+      pmset.classList.toggle("on", !am);
+    }
+    function applyAmPm(wantAm) {
+      const parts = (tin.value || "00:00").split(":");
+      let h = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10);
+      if (!Number.isFinite(h)) h = 0;
+      if (!Number.isFinite(m)) m = 0;
+      const isAm = h < 12;
+      if (wantAm && !isAm) h -= 12;
+      if (!wantAm && isAm) h += 12;
+      tin.value = pad(h) + ":" + pad(m);
+      paintAmPmSet();
+      buildFromInput(true);
+    }
+
     function buildFromInput(keepPage) {
       const base = parseStartFromInput();
       if (!base) return;
@@ -1129,7 +1196,7 @@
         meta.className = "meta";
         meta.innerHTML = '<div class="dow">J' + String(dayOfYear(d)).padStart(3, "0")
           + "  ·  " + fmtDow(d) + '</div>'
-          + '<div class="when"><span class="clock">' + fmtClock(d) + '</span><span class="ampm">' + fmtAmPm(d)
+          + '<div class="when"><span class="clock">' + fmtClock(d) + '</span><span class="ampm ' + (d.getHours() < 12 ? "am" : "pm") + '">' + fmtAmPm(d)
           + '</span>' + (num == null ? '<span class="bedtag empty">Bed #</span>' : '<span class="bedtag">Bed #' + num + "</span>") + "</div>";
         slot.appendChild(meta);
 
@@ -1261,8 +1328,10 @@
     });
     document.getElementById("closemore").addEventListener("click", () => setControlsOpen(false));
     ["change", "input", "blur"].forEach((ev) => {
-      tin.addEventListener(ev, buildFromInput);
+      tin.addEventListener(ev, () => { paintAmPmSet(); buildFromInput(); });
     });
+    amset.addEventListener("click", () => applyAmPm(true));
+    pmset.addEventListener("click", () => applyAmPm(false));
     ih.addEventListener("change", buildFromInput);
     im.addEventListener("change", buildFromInput);
     document.getElementById("voicelbl").addEventListener("click", () => {
@@ -1312,6 +1381,7 @@
         const n = new Date();
         tin.value = pad(n.getHours()) + ":" + pad(n.getMinutes());
       }
+      paintAmPmSet();
       paintMute();
       document.body.addEventListener("touchstart", unlockAudio, { once: true });
       document.body.addEventListener("click", unlockAudio, { once: true });

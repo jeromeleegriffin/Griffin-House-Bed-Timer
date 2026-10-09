@@ -798,7 +798,7 @@
 
     function originIndex(now) {
       if (!start) return 0;
-      const first = start.getTime() + intervalMs;
+      const first = start.getTime();
       const n = (now || new Date()).getTime();
       let i = Math.ceil((n - first + 400) / intervalMs);
       if (i < 0) i = 0;
@@ -807,7 +807,7 @@
 
     function pageTargets(now) {
       if (!start) return [];
-      const first = start.getTime() + intervalMs;
+      const first = start.getTime();
       const origin = originIndex(now || new Date());
       const out = [];
       for (let i = 0; i < SCREEN_BEDS; i++) {
@@ -818,7 +818,7 @@
 
     function nextFuture(now) {
       if (!start) return null;
-      const first = start.getTime() + intervalMs;
+      const first = start.getTime();
       const origin = originIndex(now || new Date());
       return new Date(first + origin * intervalMs);
     }
@@ -1100,9 +1100,10 @@
       const hh = parseInt(parts[0], 10);
       const mm = parseInt(parts[1], 10);
       if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+      if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
       const now = new Date();
+      // START is today's selected clock time. A future time stays today; a past time stays today as the recurrence anchor.
       const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
-      if (base.getTime() > now.getTime()) base.setDate(base.getDate() - 1);
       return base;
     }
 
@@ -1136,6 +1137,7 @@
       intervalMs = intervalFromInputs();
       if (!keepPage) page = 0;
       spoken = {};
+      lastOrigin = null;
       persist();
       renderSlots();
       tick();

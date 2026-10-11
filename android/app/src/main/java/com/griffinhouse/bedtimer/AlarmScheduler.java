@@ -17,8 +17,8 @@ public final class AlarmScheduler {
    JSONObject o=new JSONObject(raw);long start=o.getLong("start"),interval=o.getLong("interval");
    int count=o.getInt("count");JSONArray beds=o.getJSONArray("beds");
    if(count<1||count>30||interval<60000||beds.length()!=count)return;
-   long now=System.currentTimeMillis();long index=now<=start?0:Math.max(0,Math.floorDiv(now-start,interval)+1);
-   long when=start+index*interval;int bed=beds.getInt((int)(index%count));
+   long now=System.currentTimeMillis();long index=AlarmMath.nextIndex(now,start,interval);
+   long when=AlarmMath.dueAt(start,interval,index);int bed=beds.getInt(AlarmMath.bedPosition(index,count));
    intent.putExtra("bed",bed);intent.putExtra("scheduled",when);
    pi=PendingIntent.getBroadcast(c,101,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
    if(Build.VERSION.SDK_INT>=31&&!am.canScheduleExactAlarms()){am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);return;}

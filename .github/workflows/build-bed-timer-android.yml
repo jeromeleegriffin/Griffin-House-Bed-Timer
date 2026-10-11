@@ -23,6 +23,29 @@ jobs:
           gradle-version: '8.10.2'
       - name: Install Android SDK platform
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify alarm rotation calculations
+        working-directory: android
+        run: |
+          mkdir -p /tmp/bedtimer-math
+          javac -d /tmp/bedtimer-math app/src/main/java/com/griffinhouse/bedtimer/AlarmMath.java
+          cat >/tmp/bedtimer-math/AlarmMathTest.java <<'JAVA'
+          import com.griffinhouse.bedtimer.AlarmMath;
+          public class AlarmMathTest {
+            static void check(boolean ok){if(!ok)throw new AssertionError("Alarm math failed");}
+            public static void main(String[] args){
+              long start=1000000L, interval=198*60000L;
+              check(AlarmMath.nextIndex(start-1,start,interval)==0);
+              check(AlarmMath.nextIndex(start,start,interval)==0);
+              check(AlarmMath.nextIndex(start+1,start,interval)==1);
+              check(AlarmMath.nextIndex(start+interval,start,interval)==2);
+              check(AlarmMath.bedPosition(22,22)==0);
+              check(AlarmMath.dueAt(start,interval,22)-start==72L*3600000L+36L*60000L);
+              System.out.println("Alarm rotation tests passed");
+            }
+          }
+          JAVA
+          javac -cp /tmp/bedtimer-math -d /tmp/bedtimer-math /tmp/bedtimer-math/AlarmMathTest.java
+          java -cp /tmp/bedtimer-math AlarmMathTest
       - name: Build debug APK
         working-directory: android
         run: gradle --no-daemon assembleDebug

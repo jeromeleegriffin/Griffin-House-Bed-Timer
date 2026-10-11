@@ -1,0 +1,3 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.griffinhouse.bedtimer'; compileSdk 35
+ defaultConfig { applicationId 'com.griffinhouse.bedtimer'; minSdk 26; targetSdk 35; versionCode 1; versionName '0.1-test' } }

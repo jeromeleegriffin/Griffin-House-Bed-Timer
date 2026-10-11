@@ -1,5 +1,5 @@
 plugins { id 'com.android.application' }
 android { namespace 'com.griffinhouse.bedtimer'; compileSdk 35
- defaultConfig { applicationId 'com.griffinhouse.bedtimer'; minSdk 26; targetSdk 35; versionCode 3; versionName '0.3-icon-test' } }
+ defaultConfig { applicationId 'com.griffinhouse.bedtimer'; minSdk 26; targetSdk 35; versionCode 4; versionName '0.4-original-icon' } }
 
 dependencies { implementation 'androidx.webkit:webkit:1.12.1' }

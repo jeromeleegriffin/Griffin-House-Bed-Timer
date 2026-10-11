@@ -1,5 +1,5 @@
 package com.griffinhouse.bedtimer;
-import android.app.*;import android.os.*;import android.content.*;import android.webkit.*;import android.Manifest;import android.content.pm.PackageManager;import android.provider.Settings;import android.net.Uri;
+import android.app.*;import android.os.*;import android.content.*;import android.webkit.*;import android.Manifest;import android.content.pm.PackageManager;import android.provider.Settings;import android.net.Uri;import androidx.webkit.WebViewAssetLoader;import androidx.webkit.WebViewClientCompat;import android.webkit.WebResourceRequest;import android.webkit.WebResourceResponse;
 public class MainActivity extends Activity {
  WebView web;ValueCallback<Uri[]> fileCallback;
  @Override public void onCreate(Bundle b){super.onCreate(b);
@@ -11,7 +11,11 @@ public class MainActivity extends Activity {
   web.setWebChromeClient(new WebChromeClient(){
    @Override public void onPermissionRequest(PermissionRequest request){runOnUiThread(()->{if(java.util.Arrays.asList(request.getResources()).contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});else request.deny();});}
   });
-  web.loadUrl("https://jeromeleegriffin.github.io/Griffin-House-Bed-Timer/bed-times.html");
+  WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
+  web.setWebViewClient(new WebViewClientCompat(){
+   @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return loader.shouldInterceptRequest(request.getUrl());}
+  });
+  web.loadUrl("https://appassets.androidplatform.net/assets/bed-times.html");
   if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS,Manifest.permission.CAMERA},42);
   else if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.CAMERA},43);
   if(Build.VERSION.SDK_INT>=31){AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);if(!am.canScheduleExactAlarms()){try{startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,Uri.parse("package:"+getPackageName())));}catch(Exception ignored){}}}

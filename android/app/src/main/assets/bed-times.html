@@ -1652,7 +1652,7 @@ $("btCapture").onclick=async()=>{
  const $=id=>document.getElementById(id);
  const KEY="bedTimes.v5",PRODUCTS="bedTimes.products.v1",VERSION=1;
  const panel=$("morepanel"),dialog=$("btTransfer"),field=$("btTransferText"),status=$("btTransferStatus");
- const launch=document.createElement("button");launch.type="button";launch.textContent="Backup / Transfer Data";launch.onclick=()=>{dialog.classList.add("on");status.textContent="";field.value=""};panel.appendChild(launch);
+ const launch=document.createElement("button");launch.type="button";launch.textContent="Backup / Transfer Data · v0.2";launch.onclick=()=>{dialog.classList.add("on");status.textContent="";field.value=""};panel.appendChild(launch);
  $("btTransferClose").onclick=()=>dialog.classList.remove("on");
  dialog.onclick=e=>{if(e.target===dialog)dialog.classList.remove("on")};
  const object=x=>x!==null&&typeof x==="object"&&!Array.isArray(x);

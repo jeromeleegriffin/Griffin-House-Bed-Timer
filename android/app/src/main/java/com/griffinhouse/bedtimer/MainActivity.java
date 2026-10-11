@@ -1,5 +1,5 @@
 package com.griffinhouse.bedtimer;
-import android.app.*;import android.os.*;import android.content.*;import android.webkit.*;import android.Manifest;import android.content.pm.PackageManager;import android.provider.Settings;import android.net.Uri;import androidx.webkit.WebViewAssetLoader;import androidx.webkit.WebViewClientCompat;import android.webkit.WebResourceRequest;import android.webkit.WebResourceResponse;
+import android.app.*;import android.os.*;import android.content.*;import android.webkit.*;import android.Manifest;import android.content.pm.PackageManager;import android.provider.Settings;import android.net.Uri;import androidx.webkit.WebViewAssetLoader;
 public class MainActivity extends Activity {
  WebView web;ValueCallback<Uri[]> fileCallback;
  @Override public void onCreate(Bundle b){super.onCreate(b);
@@ -12,7 +12,7 @@ public class MainActivity extends Activity {
    @Override public void onPermissionRequest(PermissionRequest request){runOnUiThread(()->{if(java.util.Arrays.asList(request.getResources()).contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});else request.deny();});}
   });
   WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
-  web.setWebViewClient(new WebViewClientCompat(){
+  web.setWebViewClient(new WebViewClient(){
    @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return loader.shouldInterceptRequest(request.getUrl());}
   });
   web.loadUrl("https://appassets.androidplatform.net/assets/bed-times.html");

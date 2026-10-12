@@ -1069,7 +1069,8 @@
         }
         const beds = Array.from({length:bedCount}, (_, i) => bedSeq[i]);
         window.BedNative.schedule(JSON.stringify({
-          start:start.getTime(), interval:intervalMs, count:bedCount, beds,\n          alarmId:apick.value, personaId:ppick.value, sayText:saytext.value
+          start:start.getTime(), interval:intervalMs, count:bedCount, beds,
+          alarmId:apick.value, personaId:ppick.value, sayText:saytext.value
         }));
       } catch(e) { console.warn("Native alarm synchronization failed", e); }
     }

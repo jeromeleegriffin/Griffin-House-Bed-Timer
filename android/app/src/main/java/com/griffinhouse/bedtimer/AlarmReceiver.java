@@ -10,6 +10,7 @@ public class AlarmReceiver extends android.content.BroadcastReceiver{
   PendingIntent p=PendingIntent.getActivity(c,202,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
   Notification n=new Notification.Builder(c,channel).setSmallIcon(android.R.drawable.ic_lock_idle_alarm).setContentTitle("Bed "+(bed>0?bed:"")+" coming out").setContentText("Next bed is due now").setContentIntent(p).setAutoCancel(true).setCategory(Notification.CATEGORY_ALARM).build();
   try{nm.notify(202,n);}catch(SecurityException ignored){}
-  try { Intent play=new Intent(c,AlarmPlaybackService.class);play.putExtra("bed",bed);c.startForegroundService(play); } catch(Exception ignored){}\n  AlarmScheduler.reschedule(c);
+  try { Intent play=new Intent(c,AlarmPlaybackService.class);play.putExtra("bed",bed);c.startForegroundService(play); } catch(Exception ignored){}
+  AlarmScheduler.reschedule(c);
  }
 }

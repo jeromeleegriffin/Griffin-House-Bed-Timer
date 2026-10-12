@@ -2,9 +2,9 @@ package com.griffinhouse.bedtimer;
 import android.app.*;import android.content.*;import android.os.Build;import org.json.*;
 public final class AlarmScheduler {
  static final String PREF="bed_alarm_schedule",KEY="schedule";
- static void schedule(Context c,long start,long interval,int count,int[] beds){
+ static void schedule(Context c,long start,long interval,int count,int[] beds,String alarmId,String personaId,String sayText){
   if(interval<60000||count<1||count>30||beds.length!=count)return;
-  JSONObject o=new JSONObject();try{o.put("start",start);o.put("interval",interval);o.put("count",count);JSONArray a=new JSONArray();for(int n:beds)a.put(n);o.put("beds",a);}catch(Exception e){return;}
+  JSONObject o=new JSONObject();try{o.put("start",start);o.put("interval",interval);o.put("count",count);JSONArray a=new JSONArray();for(int n:beds)a.put(n);o.put("beds",a);o.put("alarmId",alarmId);o.put("personaId",personaId);o.put("sayText",sayText);}catch(Exception e){return;}
   c.getSharedPreferences(PREF,0).edit().putString(KEY,o.toString()).apply();reschedule(c);
  }
  static void reschedule(Context c){

@@ -5,7 +5,7 @@ public class MainActivity extends Activity {
  @Override public void onCreate(Bundle b){super.onCreate(b);
   web=new WebView(this);setContentView(web);WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);s.setMediaPlaybackRequiresUserGesture(false);
   web.addJavascriptInterface(new Object(){
-   @JavascriptInterface public void schedule(String json){runOnUiThread(()->{try{org.json.JSONObject o=new org.json.JSONObject(json);org.json.JSONArray a=o.getJSONArray("beds");int[] beds=new int[a.length()];for(int j=0;j<beds.length;j++)beds[j]=a.getInt(j);AlarmScheduler.schedule(MainActivity.this,o.getLong("start"),o.getLong("interval"),o.getInt("count"),beds);}catch(Exception ignored){}});}
+   @JavascriptInterface public void schedule(String json){runOnUiThread(()->{try{org.json.JSONObject o=new org.json.JSONObject(json);org.json.JSONArray a=o.getJSONArray("beds");int[] beds=new int[a.length()];for(int j=0;j<beds.length;j++)beds[j]=a.getInt(j);AlarmScheduler.schedule(MainActivity.this,o.getLong("start"),o.getLong("interval"),o.getInt("count"),beds,o.optString("alarmId","chime"),o.optString("personaId","sexy"),o.optString("sayText","Bed is coming out."));}catch(Exception ignored){}});}
    @JavascriptInterface public void cancel(){runOnUiThread(()->AlarmScheduler.cancel(MainActivity.this));}
   },"BedNative");
   web.setWebChromeClient(new WebChromeClient(){

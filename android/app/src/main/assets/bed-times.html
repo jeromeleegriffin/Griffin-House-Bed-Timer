@@ -483,14 +483,9 @@
 .bt-total{font-size:20px;font-weight:bold;text-align:right;margin:15px 0}
 .bt-rotation-row{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #ffffff22}
 </style><style>
-/* Compact visible navigation and optional camera OCR */
+/* Compact main-screen navigation; camera OCR intentionally removed */
 #btNav{display:flex;gap:8px;justify-content:space-between;margin:5px 0}
 #btNav button{flex:1;min-height:32px;padding:3px 8px;font-size:15px;border-radius:9px}
-#btScanner{position:fixed;inset:0;background:#081020f5;z-index:10020;display:none;align-items:center;justify-content:center;padding:12px}
-#btScanner.on{display:flex}
-#btScanner .bt-dialog{width:min(500px,100%);max-height:95vh}
-#btVideo{width:100%;max-height:40vh;object-fit:contain;background:#000;border-radius:8px}
-#btOcrStatus{font-size:13px;margin:8px 0;min-height:24px}
 </style></head>
 <body>
   <div class="app">
@@ -1533,99 +1528,17 @@ function decorate(){
 const observer=new MutationObserver(()=>{observer.disconnect();decorate();observer.observe(list,{childList:true})});
 observer.observe(list,{childList:true});decorate();
 })();
-</script><div id="btScanner" role="dialog" aria-modal="true" aria-label="Scan bed map"><div class="bt-dialog">
-<h2>Scan Bed Map</h2>
-<video id="btVideo" autoplay muted playsinline></video>
-<div id="btOcrStatus">Point the camera at the bed map. Check the results before saving.</div>
-<button id="btCapture" type="button">Read camera view</button>
-<button id="btStopScan" type="button">Close camera</button>
-</div></div><script>
-/* Camera frames are transient: never saved or transmitted to a recognition API. */
+</script><script>
+/* Main-screen navigation retained; no camera or OCR code */
 (function(){
-const $=id=>document.getElementById(id);
-const nav=document.createElement("div");nav.id="btNav";
-const prev=document.createElement("button");prev.type="button";prev.textContent="‹ Back";prev.setAttribute("aria-label","Previous beds");
-const next=document.createElement("button");next.type="button";next.textContent="Forward ›";next.setAttribute("aria-label","Next beds");
-prev.onclick=()=>{const b=$("back");if(b)b.click()};
-next.onclick=()=>{const b=$("fwd");if(b)b.click()};
-nav.append(prev,next);$("times").insertAdjacentElement("afterend",nav);
-const btn=document.createElement("button");btn.type="button";btn.textContent="Scan Bed Map (optional)";
-$("btAdd").insertAdjacentElement("afterend",btn);
-let stream=null,worker=null,busy=false;
-const status=t=>$("btOcrStatus").textContent=t;
-async function stop(){
- if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
- $("btVideo").srcObject=null;$("btScanner").classList.remove("on");
- if(worker){try{await worker.terminate()}catch(e){}worker=null}
- busy=false;
-}
-btn.onclick=async()=>{
- $("btScanner").classList.add("on");status("Opening camera…");
- try{
- if(!navigator.mediaDevices?.getUserMedia)throw Error("Camera access requires HTTPS and a supported browser.");
- stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});
- $("btVideo").srcObject=stream;await $("btVideo").play();
- status("Aim at the printed or handwritten map, then tap Read camera view.");
- }catch(e){status("Camera unavailable: "+e.message)}
-};
-$("btStopScan").onclick=stop;
-$("btScanner").onclick=e=>{if(e.target.id==="btScanner")stop()};
-function convert(raw){
- const normalized=String(raw).toUpperCase().replace(/[^A-Z0-9]/g,"");
- const m=normalized.match(/^(?:85|86)(?:96|09|10)([AB])?$/);
- if(!m)return null;
- const key=normalized.slice(0,4);
- const codes={"8596":"6","8609":"9","8510":"10"};
- return codes[key]?(codes[key]+(m[1]||"")):null;
-}
-function parse(text){
- const lines=String(text).toUpperCase().split(/\n+/);const results=[];
- for(let i=0;i<lines.length;i++){
- const line=lines[i].replace(/[—–]/g,"-");
- const match=line.match(/(?:85[\s-]*(?:96|10)|86[\s-]*09)\s*([AB])?/);
- if(!match)continue;
- const code=convert(match[0]);if(!code)continue;
- // OCR may find multiple figures: only use an explicitly labeled piece count.
- const nearby=lines.slice(i,Math.min(i+3,lines.length)).join(" ");
- const piece=nearby.match(/(?:PCS?|PIECES)\s*[:#-]?\s*(\d{1,5})|\b(\d{1,5})\s*(?:PCS?|PIECES)\b/);
- results.push({code,pieces:piece?(piece[1]||piece[2]):""});
- }
- return results;
-}
-$("btCapture").onclick=async()=>{
- if(busy||!stream)return;
- busy=true;$("btCapture").disabled=true;
- let canvas=null;
- try{
- status("Reading camera view locally. First scan may download the OCR engine.");
- const video=$("btVideo");canvas=document.createElement("canvas");
- canvas.width=video.videoWidth;canvas.height=video.videoHeight;
- if(!canvas.width||!canvas.height)throw Error("Camera is not ready.");
- const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(video,0,0);
- if(!window.Tesseract){
- await new Promise((resolve,reject)=>{
- const tag=document.createElement("script");tag.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
- tag.onload=resolve;tag.onerror=()=>reject(Error("OCR library could not load. Internet is needed for the first scan."));document.head.append(tag);
- });
- }
- worker=await window.Tesseract.createWorker("eng",1,{logger:m=>{if(m.status==="recognizing text")status("Reading map: "+Math.round((m.progress||0)*100)+"%")}});
- const out=await worker.recognize(canvas);const found=parse(out.data.text);
- await worker.terminate();worker=null;
- if(!found.length){status("No supported job numbers recognized. Try better lighting or enter them manually.");return}
- await stop();
- const dialog=$("productSheet");const inputs=dialog.querySelector("#btProductRows");
- // Populate existing manual editor through its controls; user must press Save.
- for(const item of found){
- $("btAdd").click();
- const rows=inputs.querySelectorAll(".bt-product-row");const row=rows[rows.length-1];
- const code=row.querySelectorAll("input")[0],pieces=row.querySelectorAll("input")[1];
- code.value=item.code;code.dispatchEvent(new Event("input",{bubbles:true}));
- pieces.value=item.pieces;pieces.dispatchEvent(new Event("input",{bubbles:true}));
- }
- alert("OCR added "+found.length+" product row(s). Verify every code and piece count before pressing Save. Blank quantities must be entered manually.");
- }catch(e){status("Scan failed: "+e.message)}
- finally{if(canvas){canvas.width=0;canvas.height=0}busy=false;$("btCapture").disabled=false}
-};
+ const list=document.getElementById("times");
+ if(!list||document.getElementById("btNav"))return;
+ const nav=document.createElement("div");nav.id="btNav";
+ const prev=document.createElement("button");prev.type="button";prev.textContent="‹ Back";prev.setAttribute("aria-label","Previous beds");
+ const next=document.createElement("button");next.type="button";next.textContent="Forward ›";next.setAttribute("aria-label","Next beds");
+ prev.onclick=()=>document.getElementById("back")?.click();
+ next.onclick=()=>document.getElementById("fwd")?.click();
+ nav.append(prev,next);list.insertAdjacentElement("afterend",nav);
 })();
 </script><style>
 #btTransfer{position:fixed;inset:0;z-index:10040;background:#000c;display:none;align-items:center;justify-content:center;padding:12px}

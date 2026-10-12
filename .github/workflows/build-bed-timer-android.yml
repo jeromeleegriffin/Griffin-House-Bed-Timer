@@ -52,7 +52,9 @@ jobs:
           JAVA
           javac -cp /tmp/bedtimer-math -d /tmp/bedtimer-math /tmp/bedtimer-math/AlarmMathTest.java
           java -cp /tmp/bedtimer-math AlarmMathTest
-      - name: Restore approved original launcher icon\n        run: python3 android/scripts/extract_original_icon.py\n      - name: Build debug APK
+      - name: Restore approved original launcher icon
+        run: python3 android/scripts/extract_original_icon.py
+      - name: Build debug APK
         working-directory: android
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4

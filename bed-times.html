@@ -537,6 +537,10 @@
 .slot .meta{min-height:0;overflow:hidden}
 .slot{overflow:hidden}
 .times{gap:0.4vh}
+</style><style>
+.kiln-row{justify-content:space-between;gap:6px}
+#kilnSelect{flex:1;min-width:80px}
+.kiln-row button{font-size:12px;padding:5px 9px;white-space:nowrap}
 </style></head>
 <body>
   <div class="app">
@@ -577,6 +581,12 @@
     <div class="panel-sheet" id="morepanel">
     <div class="bottom-bar">
       <button id="closemore" type="button">Close controls ▾</button>
+      <div class="row kiln-row">
+        <label class="k" for="kilnSelect">Kiln</label>
+        <select class="pick" id="kilnSelect" aria-label="Kiln profile"></select>
+        <button class="ghost" id="kilnAdd" type="button">+ Kiln</button>
+        <button class="ghost" id="kilnSave" type="button">Save</button>
+      </div>
       <div class="row">
         <label class="k" for="bcount">Beds</label>
         <select class="pick" id="bcount"></select>
@@ -656,6 +666,67 @@
       }
     })();
     const STORE = "bedTimes.v5";
+    const KILNS_KEY = "bedTimes.kilns.v1";
+    const KILN_ACTIVE = "bedTimes.kilnActive.v1";
+    const kilnSelect = document.getElementById("kilnSelect");
+    let kilnNames = [];
+    try { const v=JSON.parse(localStorage.getItem(KILNS_KEY)||"null"); if(Array.isArray(v)) kilnNames=v.filter(x=>Number.isInteger(x)&&x>0&&x<=999).slice(0,40); } catch(e){}
+    if(!kilnNames.includes(15)) kilnNames.unshift(15);
+    let activeKiln=Number(localStorage.getItem(KILN_ACTIVE))||15;
+    if(!kilnNames.includes(activeKiln)) activeKiln=15;
+    const kilnStore=n=>"bedTimes.kiln."+n+".v1";
+    // Preserve the original saved schedule as Kiln 15 on first upgrade.
+    if(!localStorage.getItem(kilnStore(15)) && localStorage.getItem(STORE)){
+      try{localStorage.setItem(kilnStore(15),localStorage.getItem(STORE))}catch(e){}
+    }
+    function paintKilns(){
+      kilnSelect.innerHTML="";
+      kilnNames.sort((a,b)=>a-b).forEach(n=>{const o=document.createElement("option");o.value=String(n);o.textContent="Kiln "+n;kilnSelect.appendChild(o)});
+      kilnSelect.value=String(activeKiln);
+    }
+    paintKilns();
+    // Restore selected kiln on page load. Existing main timer storage stays compatible.
+    const chosenKiln=localStorage.getItem(kilnStore(activeKiln));
+    if(chosenKiln){try{localStorage.setItem(STORE,chosenKiln)}catch(e){}}
+    function saveKiln(){
+      const current=localStorage.getItem(STORE);
+      if(current)localStorage.setItem(kilnStore(activeKiln),current);
+      localStorage.setItem(KILNS_KEY,JSON.stringify(kilnNames));
+      localStorage.setItem(KILN_ACTIVE,String(activeKiln));
+    }
+    kilnSelect.addEventListener("change",()=>{
+      try{
+        saveKiln();
+        const target=Number(kilnSelect.value);
+        if(!kilnNames.includes(target))return;
+        activeKiln=target;
+        const saved=localStorage.getItem(kilnStore(target));
+        if(saved)localStorage.setItem(STORE,saved);
+        else {
+          const baseline=JSON.parse(localStorage.getItem(kilnStore(15))||localStorage.getItem(STORE)||"{}");
+          baseline.bedSeq=Array.isArray(baseline.bedSeq)?baseline.bedSeq.slice():[];
+          baseline.history=[];baseline.page=0;
+          localStorage.setItem(STORE,JSON.stringify(baseline));
+        }
+        saveKiln();location.reload();
+      }catch(e){alert("Could not switch kiln: "+e.message)}
+    });
+    document.getElementById("kilnAdd").addEventListener("click",()=>{
+      const value=prompt("New kiln number (1–999):");
+      if(value===null)return;
+      if(!/^\\d{1,3}$/.test(value.trim())||Number(value)<1){alert("Enter a kiln number from 1 to 999.");return}
+      const n=Number(value);
+      if(kilnNames.includes(n)){kilnSelect.value=String(n);kilnSelect.dispatchEvent(new Event("change"));return}
+      if(kilnNames.length>=40){alert("Maximum 40 kiln profiles.");return}
+      saveKiln();kilnNames.push(n);localStorage.setItem(KILNS_KEY,JSON.stringify(kilnNames));
+      const baseline=JSON.parse(localStorage.getItem(STORE)||"{}");
+      baseline.history=[];baseline.page=0;baseline.bedSeq=Array.from({length:baseline.bedCount||10},()=>null);
+      localStorage.setItem(kilnStore(n),JSON.stringify(baseline));
+      activeKiln=n;localStorage.setItem(KILN_ACTIVE,String(n));location.reload();
+    });
+    document.getElementById("kilnSave").addEventListener("click",()=>{saveKiln();const b=document.getElementById("kilnSave");b.textContent="Saved ✓";setTimeout(()=>b.textContent="Save",1200)});
+    window.addEventListener("pagehide",()=>{try{saveKiln()}catch(e){}});
+
     const tin = document.getElementById("tin");
     const ih = document.getElementById("ih");
     const im = document.getElementById("im");
@@ -1142,6 +1213,7 @@
           history: history.slice(-240)
         }));
       } catch (e) {}
+      try { saveKiln(); } catch(e) {}
     }
 
     function restore() {
@@ -1645,7 +1717,12 @@ observer.observe(list,{childList:true});decorate();
   const schedule=JSON.parse(localStorage.getItem(KEY)||"null");
   if(!schedule)throw Error("No saved schedule found on this device");
   const products=JSON.parse(localStorage.getItem(PRODUCTS)||"{}");
-  const backup={format:"griffin-bed-timer-backup",version:VERSION,createdAt:new Date().toISOString(),schedule:validateSchedule(schedule),products:validateProducts(products)};
+  const names=JSON.parse(localStorage.getItem("bedTimes.kilns.v1")||"[15]");
+  const active=Number(localStorage.getItem("bedTimes.kilnActive.v1"))||15;
+  const kilns={};
+  for(const n of names){if(!Number.isInteger(n)||n<1||n>999)continue;const raw=n===active?localStorage.getItem(KEY):localStorage.getItem("bedTimes.kiln."+n+".v1");if(raw)kilns[n]=validateSchedule(JSON.parse(raw))}
+  kilns[active]=validateSchedule(schedule);
+  const backup={format:"griffin-bed-timer-backup",version:VERSION,createdAt:new Date().toISOString(),schedule:validateSchedule(schedule),products:validateProducts(products),activeKiln:active,kilns};
   return JSON.stringify(backup,null,2);
  }
  $("btExport").onclick=()=>{try{field.value=exportData();status.textContent="Backup ready. Copy it, or download JSON."}catch(e){status.textContent=e.message}};
@@ -1668,10 +1745,22 @@ observer.observe(list,{childList:true});decorate();
    const data=JSON.parse(field.value);
    if(!object(data)||data.format!=="griffin-bed-timer-backup"||data.version!==VERSION)throw Error("This is not a compatible Bed Timer backup");
    const schedule=validateSchedule(data.schedule),products=validateProducts(data.products);
+   const importedKilns={};
+   if(data.kilns!==undefined){
+     if(!object(data.kilns)||Object.keys(data.kilns).length>40)throw Error("Invalid kiln profiles");
+     for(const [key,value] of Object.entries(data.kilns)){if(!/^[1-9]\\d{0,2}$/.test(key))throw Error("Invalid kiln number");importedKilns[key]=validateSchedule(value)}
+   }
+   const importedActive=Number(data.activeKiln)||15;
+   if(!Number.isInteger(importedActive)||importedActive<1||importedActive>999)throw Error("Invalid active kiln");
    const count=Object.keys(products).length;
    if(!confirm("Import "+schedule.bedCount+"-bed schedule and product entries for "+count+" beds? This replaces the data saved in this app. Continue?"))return;
    const priorSchedule=localStorage.getItem(KEY),priorProducts=localStorage.getItem(PRODUCTS);
    try{
+    const all=Object.keys(importedKilns).length?importedKilns:{[importedActive]:schedule};
+    all[importedActive]=schedule;
+    for(const [n,v] of Object.entries(all))localStorage.setItem("bedTimes.kiln."+n+".v1",JSON.stringify(v));
+    localStorage.setItem("bedTimes.kilns.v1",JSON.stringify(Object.keys(all).map(Number)));
+    localStorage.setItem("bedTimes.kilnActive.v1",String(importedActive));
     localStorage.setItem(KEY,JSON.stringify(schedule));
     localStorage.setItem(PRODUCTS,JSON.stringify(products));
    }catch(e){

@@ -544,6 +544,12 @@
 </style><style>
 .bt-proprietary-notice{font-size:14px;font-weight:800;color:#ffd2c9;border:1px solid #985e58;background:#3b2429;border-radius:8px;padding:10px;margin:5px 0 12px}
 #productSheet input:disabled,#productSheet button:disabled{opacity:.35;filter:grayscale(1);cursor:not-allowed}
+</style><style>
+.bt-unlock-row{display:flex;gap:8px;align-items:center;margin:8px 0}
+#btUnlockPassword{min-width:0;flex:1;padding:10px;border-radius:7px;background:#101827;color:white;border:1px solid #6d7991}
+#btUnlock{padding:9px 13px;border-radius:7px;background:#426b9d;color:white}
+#btUnlockStatus{font-size:12px;margin:5px 0;color:#e8c76e}
+.bt-unlock-row :disabled{opacity:.5}
 </style></head>
 <body>
   <div class="app">
@@ -1565,7 +1571,7 @@
     })();
   </script>
 <div id="productSheet" role="dialog" aria-modal="true" aria-label="Bed products"><div class="bt-dialog">
-<h2 id="btProductTitle">Bed products</h2><p class="bt-proprietary-notice" role="note">Ask to unlock possible proprietary information.</p><div id="btProductRows"></div>
+<h2 id="btProductTitle">Bed products</h2><p class="bt-proprietary-notice" role="note">Ask to unlock possible proprietary information.</p><div class="bt-unlock-row"><input id="btUnlockPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Unlock password" aria-label="Unlock password" /><button type="button" id="btUnlock">Unlock</button></div><p id="btUnlockStatus" role="status" aria-live="polite"></p><div id="btProductRows"></div>
 <button type="button" id="btAdd">+ Add product</button><div class="bt-total" id="btProductTotal">TOTAL 0</div>
 <button type="button" id="btSave">Save</button><button type="button" id="btCancel">Cancel</button>
 </div></div>
@@ -1581,7 +1587,12 @@ const byId=id=>document.getElementById(id);
 const safeNum=n=>Number.isFinite(Number(n))&&Number(n)>=0?Math.floor(Number(n)):0;
 const sum=a=>a.reduce((n,r)=>n+safeNum(r.pieces),0);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(products));return true}catch(e){alert("Could not save bed products. Check browser storage.");return false}};
-const close=id=>byId(id).classList.remove("on");
+const close=id=>{byId(id).classList.remove("on");if(id==="productSheet"){unlocked=false;byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";}};
+let unlocked=false;
+function applyProductLock(){
+ byId("productSheet").querySelectorAll("#btProductRows input,#btProductRows button,#btAdd,#btSave").forEach(el=>{el.disabled=!unlocked;el.setAttribute("aria-disabled",String(!unlocked))});
+ byId("btUnlockPassword").disabled=unlocked;byId("btUnlock").disabled=unlocked;
+}
 function draw(){
  const root=byId("btProductRows");root.replaceChildren();
  rows.forEach((r,i)=>{
@@ -1592,16 +1603,31 @@ function draw(){
  qty.oninput=()=>{r.pieces=qty.value;updateTotal()};
  const del=document.createElement("button");del.textContent="×";del.setAttribute("aria-label","Delete product");del.onclick=()=>{rows.splice(i,1);draw()};
  line.append(code,qty,del);root.append(line);
- });updateTotal();
+ });updateTotal();applyProductLock();
 }
 function updateTotal(){byId("btProductTotal").textContent="TOTAL PIECES: "+sum(rows).toLocaleString()}
 function openProduct(n){
  if(!Number.isFinite(n))return;
  selected=String(n);rows=(products[selected]||[]).map(x=>({...x}));
- byId("btProductTitle").textContent="BED "+selected;draw();byId("productSheet").querySelectorAll("input, button").forEach(el=>{if(el.id!=="btCancel"){el.disabled=true;el.setAttribute("aria-disabled","true")}});byId("productSheet").classList.add("on");
+ unlocked=false;byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";byId("btProductTitle").textContent="BED "+selected;draw();applyProductLock();byId("productSheet").classList.add("on");
 }
-byId("btAdd").onclick=()=>{};
-byId("btSave").onclick=()=>{};
+byId("btUnlock").onclick=()=>{
+ if(byId("btUnlockPassword").value==="1989"){
+  unlocked=true;byId("btUnlockPassword").value="";
+  byId("btUnlockStatus").textContent="Unlocked for this session. Do not enter confidential company information.";
+  applyProductLock();
+ }else{
+  byId("btUnlockPassword").value="";
+  byId("btUnlockStatus").textContent="Incorrect password.";
+ }
+};
+byId("btUnlockPassword").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();byId("btUnlock").click()}});
+byId("btAdd").onclick=()=>{if(!unlocked)return;rows.push({code:"",pieces:""});draw()};
+byId("btSave").onclick=()=>{
+ if(!unlocked)return;
+ const clean=rows.map(x=>({code:String(x.code).trim().toUpperCase(),pieces:safeNum(x.pieces)})).filter(x=>x.code);
+ products[selected]=clean;if(save())close("productSheet");
+};
 byId("btCancel").onclick=()=>close("productSheet");
 byId("productSheet").onclick=e=>{if(e.target.id==="productSheet")close("productSheet")};
 function rotation(){

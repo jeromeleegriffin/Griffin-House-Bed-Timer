@@ -1144,8 +1144,8 @@
       return Math.ceil((a.notes.length - 1) * a.step * 1000 + a.dur * 1000 + 200);
     }
 
-    function speakPhrase() {
-      if (muted) return;
+    function speakPhrase(preview = false) {
+      if (muted && !preview) return;
       try {
         window.speechSynthesis.cancel();
         const phrase = (saytext.value || "Bed is coming out.").trim().slice(0, 160);
@@ -1161,7 +1161,7 @@
           || voices.find(v => /^en/i.test(v.lang || ""));
         const go = () => {
           phraseTimer = null;
-          if (muted) return;
+          if (muted && !preview) return;
           const u = new SpeechSynthesisUtterance(phrase);
           u.rate = persona.rate;
           u.pitch = persona.pitch;
@@ -1509,9 +1509,8 @@
       playChosenAlarm();
     });
     document.getElementById("playvoice").addEventListener("click", () => {
-      if (muted) return;
-      unlockAudio();
-      speakPhrase();
+      // Explicit preview is independent of the automatic bed alarm toggle.
+      speakPhrase(true);
     });
     document.getElementById("chips").addEventListener("click", (e) => {
       const b = e.target.closest("[data-say]");

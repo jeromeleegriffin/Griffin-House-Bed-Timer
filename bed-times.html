@@ -504,6 +504,14 @@
 .slot .when{line-height:1}
 .slot .dow{line-height:1}
 @media(max-width:350px){.bed-alarm-main{padding:3px 6px}.bed-alarm-status{font-size:11px}#mutebtn{font-size:11px;padding:4px 7px}}
+</style><style>
+/* Collapsible bid calculator: closed by default, no timer interference */
+.bid-calc{margin:2px 0 5px}
+#bidCalcToggle{width:100%;text-align:center;min-height:28px;padding:3px 8px;background:#1d2942;border:1px solid #38486b;border-radius:7px;color:#e1b858;font-size:12px;font-weight:700}
+#bidCalcBody:not([hidden]){display:flex;align-items:center;gap:6px;padding:5px 2px}
+#bidCalcInput{min-width:0;flex:1;height:34px;box-sizing:border-box;padding:4px 9px;border:1px solid #546485;border-radius:6px;background:#0d1425;color:#fff;font-size:17px}
+#bidCalcEquals{min-width:38px;height:34px;padding:3px 8px;border-radius:6px;background:#5787f5;color:white;font-weight:800}
+#bidCalcResult{min-width:52px;max-width:40%;overflow:auto;color:#e5bc5a;font-size:17px;font-weight:800;text-align:right}
 </style></head>
 <body>
   <div class="app">
@@ -526,6 +534,14 @@
       </div>
     </div>
     <div class="bed-alarm-main" role="group" aria-label="Bed alarm controls"><div class="bed-alarm-status" id="alarmstatus" role="status" aria-live="polite">Bed Alarm ON</div><button id="mutebtn" type="button" aria-pressed="false">Turn Off Alarm</button></div>
+    <div class="bid-calc">
+      <button id="bidCalcToggle" type="button" aria-expanded="false" aria-controls="bidCalcBody">Calculator ▾</button>
+      <div id="bidCalcBody" hidden>
+        <input id="bidCalcInput" type="text" inputmode="decimal" autocomplete="off" aria-label="Calculation" placeholder="24 × 15" maxlength="80" />
+        <button id="bidCalcEquals" type="button">=</button>
+        <output id="bidCalcResult" aria-live="polite"></output>
+      </div>
+    </div>
     <div class="times" id="times"></div>
     <button id="morebtn" type="button">Controls ▴</button>
     <div class="panel-sheet" id="morepanel">
@@ -1637,6 +1653,32 @@ observer.observe(list,{childList:true});decorate();
    location.reload();
   }catch(e){status.textContent="Import not applied: "+e.message}
  };
+})();
+</script>
+<script>
+/* Safe arithmetic parser: no eval, no access to application state */
+(function(){
+ const toggle=document.getElementById("bidCalcToggle"), body=document.getElementById("bidCalcBody");
+ const input=document.getElementById("bidCalcInput"), result=document.getElementById("bidCalcResult");
+ toggle.addEventListener("click",()=>{
+  const opening=body.hidden;body.hidden=!opening;toggle.setAttribute("aria-expanded",String(opening));
+  toggle.textContent=opening?"Calculator ▴":"Calculator ▾";
+  if(opening)input.focus();
+ });
+ function calculate(raw){
+  const src=raw.replace(/[×xX]/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/\s+/g,"");
+  if(!src||!/^[0-9.+*\/()\-]+$/.test(src))throw Error("Invalid");
+  let i=0;
+  function number(){const m=/^(?:\d+(?:\.\d*)?|\.\d+)/.exec(src.slice(i));if(!m)throw Error("Invalid");i+=m[0].length;return Number(m[0]);}
+  function factor(){if(src[i]==="+"){i++;return factor()}if(src[i]==="-"){i++;return -factor()}if(src[i]==="("){i++;const v=expr();if(src[i++]!==")")throw Error("Invalid");return v}return number()}
+  function term(){let v=factor();while(src[i]==="*"||src[i]==="/"){const op=src[i++],rhs=factor();v=op==="*"?v*rhs:v/rhs}return v}
+  function expr(){let v=term();while(src[i]==="+"||src[i]==="-"){const op=src[i++],rhs=term();v=op==="+"?v+rhs:v-rhs}return v}
+  const value=expr();if(i!==src.length||!Number.isFinite(value))throw Error("Invalid");
+  return Number(value.toPrecision(12)).toLocaleString("en-US",{maximumFractionDigits:10});
+ }
+ function run(){try{result.textContent=calculate(input.value)}catch(e){result.textContent="Error"}}
+ document.getElementById("bidCalcEquals").addEventListener("click",run);
+ input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();run()}});
 })();
 </script>
 </body>

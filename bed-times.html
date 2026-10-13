@@ -530,6 +530,13 @@
 /* Owner adjustment: alarm action button approximately 35% smaller */
 #mutebtn{font-size:10px;min-height:26px;padding:3px 7px;border-radius:5px}
 @media(max-width:350px){#mutebtn{font-size:10px;min-height:26px;padding:3px 6px}}
+</style><style>
+/* Keep OUT in the small date header, not as a third row that overlaps the next bed */
+.slot .dow{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0}
+.slot .dow .next-out{display:inline-block;position:static;flex:0 0 auto;margin:0;font-size:clamp(8px,0.95vh,10px);line-height:1;letter-spacing:0;text-transform:none;opacity:.82}
+.slot .meta{min-height:0;overflow:hidden}
+.slot{overflow:hidden}
+.times{gap:0.4vh}
 </style></head>
 <body>
   <div class="app">
@@ -1565,7 +1572,7 @@ function decorate(){
  const next=new Date(first.start+(abs+first.count)*first.interval);
  const line=document.createElement("div");line.className="next-out";
  line.textContent="OUT "+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][next.getDay()]+" "+(next.getHours()%12||12)+":"+String(next.getMinutes()).padStart(2,"0")+(next.getHours()<12?" AM":" PM");
- meta.appendChild(line);
+ const dateLine=meta.querySelector(".dow"); if(dateLine){dateLine.appendChild(line)}else{meta.appendChild(line)}
  });
 }
 const observer=new MutationObserver(()=>{observer.disconnect();decorate();observer.observe(list,{childList:true})});

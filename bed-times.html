@@ -512,6 +512,20 @@
 #bidCalcInput{min-width:0;flex:1;height:34px;box-sizing:border-box;padding:4px 9px;border:1px solid #546485;border-radius:6px;background:#0d1425;color:#fff;font-size:17px}
 #bidCalcEquals{min-width:38px;height:34px;padding:3px 8px;border-radius:6px;background:#5787f5;color:white;font-weight:800}
 #bidCalcResult{min-width:52px;max-width:40%;overflow:auto;color:#e5bc5a;font-size:17px;font-weight:800;text-align:right}
+</style><style>
+/* Native in-app calculator keypad, floating above beds instead of shrinking them */
+.bid-calc{position:relative;flex:0 0 auto;margin:0 0 2px}
+#bidCalcToggle{min-height:25px;padding:2px 8px}
+#bidCalcBody:not([hidden]){position:absolute;display:block;top:100%;left:0;right:0;z-index:200;background:#101a2e;border:1px solid #637395;border-radius:10px;padding:10px;box-shadow:0 14px 28px #000b}
+.bid-calc-display{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#080f20;border:1px solid #405173;border-radius:6px;min-height:38px;padding:4px 10px;margin-bottom:7px;font-size:21px;color:#fff}
+#bidCalcInput{overflow:auto;white-space:nowrap;max-width:65%}
+#bidCalcResult{font-size:20px;color:#e8c367;white-space:nowrap;max-width:45%;overflow:auto}
+.bid-calc-keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.bid-calc-keys button{height:43px;min-height:43px;background:#293956;border:1px solid #536381;border-radius:7px;color:white;font-size:21px;font-weight:700}
+.bid-calc-keys button.op{background:#364b73;color:#f2c968}
+.bid-calc-keys button.clear{background:#763a39}
+.bid-calc-keys button.equals{grid-column:span 3;background:#4b7dea}
+.slot .next-out{font-size:clamp(9px,1vh,11px);line-height:1;margin-top:0}
 </style></head>
 <body>
   <div class="app">
@@ -537,9 +551,14 @@
     <div class="bid-calc">
       <button id="bidCalcToggle" type="button" aria-expanded="false" aria-controls="bidCalcBody">Calculator ▾</button>
       <div id="bidCalcBody" hidden>
-        <input id="bidCalcInput" type="text" inputmode="decimal" autocomplete="off" aria-label="Calculation" placeholder="24 × 15" maxlength="80" />
-        <button id="bidCalcEquals" type="button">=</button>
-        <output id="bidCalcResult" aria-live="polite"></output>
+        <div class="bid-calc-display"><output id="bidCalcInput" aria-label="Calculation">0</output><output id="bidCalcResult" aria-live="polite"></output></div>
+        <div class="bid-calc-keys" aria-label="Calculator keypad">
+          <button type="button" data-calc="7">7</button><button type="button" data-calc="8">8</button><button type="button" data-calc="9">9</button><button type="button" data-calc="÷" class="op">÷</button>
+          <button type="button" data-calc="4">4</button><button type="button" data-calc="5">5</button><button type="button" data-calc="6">6</button><button type="button" data-calc="×" class="op">×</button>
+          <button type="button" data-calc="1">1</button><button type="button" data-calc="2">2</button><button type="button" data-calc="3">3</button><button type="button" data-calc="−" class="op">−</button>
+          <button type="button" data-calc="C" class="clear">C</button><button type="button" data-calc="0">0</button><button type="button" data-calc=".">.</button><button type="button" data-calc="+" class="op">+</button>
+          <button type="button" data-calc="⌫">⌫</button><button type="button" data-calc="=" class="equals">=</button>
+        </div>
       </div>
     </div>
     <div class="times" id="times"></div>
@@ -1663,7 +1682,7 @@ observer.observe(list,{childList:true});decorate();
  toggle.addEventListener("click",()=>{
   const opening=body.hidden;body.hidden=!opening;toggle.setAttribute("aria-expanded",String(opening));
   toggle.textContent=opening?"Calculator ▴":"Calculator ▾";
-  if(opening)input.focus();
+
  });
  function calculate(raw){
   const src=raw.replace(/[×xX]/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/\s+/g,"");
@@ -1676,9 +1695,18 @@ observer.observe(list,{childList:true});decorate();
   const value=expr();if(i!==src.length||!Number.isFinite(value))throw Error("Invalid");
   return Number(value.toPrecision(12)).toLocaleString("en-US",{maximumFractionDigits:10});
  }
- function run(){try{result.textContent=calculate(input.value)}catch(e){result.textContent="Error"}}
- document.getElementById("bidCalcEquals").addEventListener("click",run);
- input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();run()}});
+ let expression="";
+ function paint(){input.textContent=expression||"0"}
+ function run(){try{const answer=calculate(expression);result.textContent="= "+answer;expression=answer.replace(/,/g,"");paint()}catch(e){result.textContent="Error"}}
+ body.querySelector(".bid-calc-keys").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-calc]");if(!btn)return;
+  const key=btn.dataset.calc;
+  if(key==="C"){expression="";result.textContent=""}
+  else if(key==="⌫"){expression=expression.slice(0,-1);result.textContent=""}
+  else if(key==="="){run();return}
+  else if(expression.length<65){expression+=key;result.textContent=""}
+  paint();
+ });
 })();
 </script>
 </body>

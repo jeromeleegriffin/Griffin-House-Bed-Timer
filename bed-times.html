@@ -1587,9 +1587,11 @@ const byId=id=>document.getElementById(id);
 const safeNum=n=>Number.isFinite(Number(n))&&Number(n)>=0?Math.floor(Number(n)):0;
 const sum=a=>a.reduce((n,r)=>n+safeNum(r.pieces),0);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(products));return true}catch(e){alert("Could not save bed products. Check browser storage.");return false}};
-const close=id=>{byId(id).classList.remove("on");if(id==="productSheet"){unlocked=false;byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";}};
+const close=id=>{byId(id).classList.remove("on");if(id==="productSheet"){unlocked=false;rows=[];byId("btProductRows").replaceChildren();byId("btProductTotal").textContent="TOTAL PIECES: Locked";byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";}};
 let unlocked=false;
 function applyProductLock(){
+ byId("btProductRows").hidden=!unlocked;
+ byId("btProductTotal").hidden=!unlocked;
  byId("productSheet").querySelectorAll("#btProductRows input,#btProductRows button,#btAdd,#btSave").forEach(el=>{el.disabled=!unlocked;el.setAttribute("aria-disabled",String(!unlocked))});
  byId("btUnlockPassword").disabled=unlocked;byId("btUnlock").disabled=unlocked;
 }
@@ -1609,11 +1611,11 @@ function updateTotal(){byId("btProductTotal").textContent="TOTAL PIECES: "+sum(r
 function openProduct(n){
  if(!Number.isFinite(n))return;
  selected=String(n);rows=(products[selected]||[]).map(x=>({...x}));
- unlocked=false;byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";byId("btProductTitle").textContent="BED "+selected;draw();applyProductLock();byId("productSheet").classList.add("on");
+ unlocked=false;byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";byId("btProductTitle").textContent="BED "+selected;byId("btProductRows").replaceChildren();byId("btProductTotal").textContent="TOTAL PIECES: Locked";applyProductLock();byId("productSheet").classList.add("on");
 }
 byId("btUnlock").onclick=()=>{
  if(byId("btUnlockPassword").value==="1989"){
-  unlocked=true;byId("btUnlockPassword").value="";
+  unlocked=true;draw();byId("btUnlockPassword").value="";
   byId("btUnlockStatus").textContent="Unlocked for this session. Do not enter confidential company information.";
   applyProductLock();
  }else{
@@ -1632,6 +1634,8 @@ byId("btCancel").onclick=()=>close("productSheet");
 byId("productSheet").onclick=e=>{if(e.target.id==="productSheet")close("productSheet")};
 function rotation(){
  const root=byId("btRotationRows");root.replaceChildren();let total=0,entered=0;
+ // Rotation product totals are also private until the bed-product password is entered.
+ if(!unlocked){const msg=document.createElement("p");msg.textContent="Product and piece information is locked. Open a bed and enter the unlock password to view it.";root.appendChild(msg);byId("btRotationTotal").textContent="TOTAL: Locked";byId("rotationSheet").classList.add("on");return;}
  const count=Number(byId("bcount").value)||0;
  for(let n=1;n<=count;n++){
  const a=products[String(n)];const has=Array.isArray(a)&&a.length>0;const pcs=has?sum(a):0;

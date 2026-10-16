@@ -602,7 +602,7 @@
         <button class="ghost" id="kilnAdd" type="button">+ Kiln</button>
         <button class="ghost" id="kilnSave" type="button">Save</button>
       </div>
-      <details id="kilnDriftPanel" class="kiln-drift"><summary>Kiln Time Drift History</summary><div id="kilnDriftRows"></div><button type="button" id="kilnDriftExport">Download Drift CSV</button></details>
+      <details id="kilnDriftPanel" class="kiln-drift"><summary>Kiln Time Drift History</summary><div id="kilnDriftRows"></div><button type="button" id="kilnDriftUndo">Undo Last Correction</button><button type="button" id="kilnDriftExport">Download Drift CSV</button></details>
       <div class="row">
         <label class="k" for="bcount">Beds</label>
         <select class="pick" id="bcount"></select>
@@ -684,6 +684,7 @@
     const STORE = "bedTimes.v5";
     const KILNS_KEY = "bedTimes.kilns.v1";
     const DRIFT_KEY = "bedTimes.kilnDrift.v1";
+    const DRIFT_UNDO_KEY = "bedTimes.kilnDriftUndo.v1";
     function readDrift(){try{const d=JSON.parse(localStorage.getItem(DRIFT_KEY)||"{}");return d&&typeof d==="object"&&!Array.isArray(d)?d:{}}catch(e){return {}}}
     function writeDrift(d){localStorage.setItem(DRIFT_KEY,JSON.stringify(d))}
     function renderDrift(){
@@ -699,6 +700,27 @@
       });
     }
     document.getElementById("kilnDriftPanel").addEventListener("toggle",renderDrift);
+    document.getElementById("kilnDriftUndo").addEventListener("click",()=>{
+      const key=String(activeKiln),all=readDrift(),entries=all[key]||[];
+      if(!entries.length){alert("No correction to undo for Kiln "+activeKiln);return}
+      const last=entries[entries.length-1];
+      if(!confirm("Remove the latest Kiln "+activeKiln+" drift record from "+new Date(last.recordedAt).toLocaleString()+"?"))return;
+      let snapshots={};try{snapshots=JSON.parse(localStorage.getItem(DRIFT_UNDO_KEY)||"{}")}catch(e){}
+      const snapshot=snapshots[key];
+      if(snapshot && snapshot.recordedAt===last.recordedAt && snapshot.schedule){
+        try{
+          const previous=JSON.parse(snapshot.schedule);
+          if(previous.start&&Number.isFinite(Date.parse(previous.start))&&Number.isFinite(previous.intervalMs)){
+            localStorage.setItem("bedTimes.v5",snapshot.schedule);
+            localStorage.setItem("bedTimes.kiln."+key+".v1",snapshot.schedule);
+          }
+        }catch(e){}
+      }
+      entries.pop();all[key]=entries;writeDrift(all);
+      delete snapshots[key];localStorage.setItem(DRIFT_UNDO_KEY,JSON.stringify(snapshots));
+      if(snapshot&&snapshot.recordedAt===last.recordedAt&&snapshot.schedule){location.reload()}
+      else{renderDrift();alert("Drift record removed. Previous timer setting was not available to restore; check the schedule before relying on it.")}
+    });
     document.getElementById("kilnDriftExport").addEventListener("click",()=>{
       const rows=[["Kiln","Recorded at","Predicted OUT","Actual OUT","Drift seconds","Beds passed","Seconds per bed"]];
       const all=readDrift();
@@ -1337,7 +1359,13 @@
         const previous=entries.length?entries[entries.length-1]:null;
         const bedsPassed=previous?Math.max(0,Math.round((observed-Date.parse(previous.actualOut))/intervalMs)):0;
         if(Math.abs(difference)>=30){
-          entries.push({recordedAt:new Date().toISOString(),predictedOut:new Date(predicted).toISOString(),actualOut:base.toISOString(),driftSeconds:difference,bedsPassed});
+          const recordedAt=new Date().toISOString();
+          try{
+            const snapshots=JSON.parse(localStorage.getItem(DRIFT_UNDO_KEY)||"{}");
+            snapshots[key]={recordedAt,schedule:localStorage.getItem(STORE)};
+            localStorage.setItem(DRIFT_UNDO_KEY,JSON.stringify(snapshots));
+          }catch(e){}
+          entries.push({recordedAt,predictedOut:new Date(predicted).toISOString(),actualOut:base.toISOString(),driftSeconds:difference,bedsPassed});
           all[key]=entries.slice(-500);try{writeDrift(all)}catch(e){console.warn("Drift history could not be saved",e)}
           renderDrift();
         }
@@ -1470,6 +1498,11 @@
     }
 
     go.addEventListener("click", () => {
+      const proposed=parseStartFromInput();if(!proposed)return;
+      if(start){
+        const answer=confirm("Set Kiln "+activeKiln+" OUT time to "+proposed.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})+"? This will replace the current schedule and may record kiln drift. Press Cancel to keep the existing schedule.");
+        if(!answer){tin.value=String(start.getHours()).padStart(2,"0")+":"+String(start.getMinutes()).padStart(2,"0");paintAmPmSet();return}
+      }
       unlockAudio();
       try { window.speechSynthesis.getVoices(); } catch (e) {}
       buildFromInput(false,true);

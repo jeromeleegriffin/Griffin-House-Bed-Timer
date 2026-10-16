@@ -556,6 +556,8 @@
 #kilnDriftRows{max-height:180px;overflow:auto;margin:7px 0}
 .kiln-drift-entry{padding:6px 2px;border-bottom:1px solid #35435a;font-variant-numeric:tabular-nums}
 #kilnDriftExport{font-size:12px;min-height:30px;padding:4px 10px}
+</style><style>
+.kiln-drift-delete{display:inline-block;margin:6px 0 2px 8px;padding:5px 9px;min-height:30px;border-radius:6px;background:#69343a;color:#fff;border:1px solid #a16b70;font-size:12px}
 </style></head>
 <body>
   <div class="app">
@@ -696,7 +698,18 @@
         const sign=e.driftSeconds>0?"+":"";
         const rate=e.bedsPassed>0?(e.driftSeconds/e.bedsPassed).toFixed(1)+" sec/bed":"Not enough beds";
         line.textContent=new Date(e.recordedAt).toLocaleString()+" | "+sign+Math.round(e.driftSeconds)+" sec "+(e.driftSeconds>0?"late":e.driftSeconds<0?"early":"on time")+" | "+e.bedsPassed+" beds | "+rate;
-        root.appendChild(line);
+        const remove=document.createElement("button");
+        remove.type="button";remove.className="kiln-drift-delete";remove.textContent="Delete Record";
+        remove.setAttribute("aria-label","Delete this drift record");
+        remove.addEventListener("click",()=>{
+          if(!confirm("Delete only this Kiln "+activeKiln+" drift record from "+new Date(e.recordedAt).toLocaleString()+"? Your bed schedule will NOT change."))return;
+          const all=readDrift(),key=String(activeKiln),arr=all[key]||[];
+          const index=arr.findIndex(x=>x.recordedAt===e.recordedAt&&x.actualOut===e.actualOut&&x.driftSeconds===e.driftSeconds);
+          if(index<0){alert("Record not found. Reload and try again.");return}
+          arr.splice(index,1);all[key]=arr;
+          try{writeDrift(all);renderDrift()}catch(err){alert("Could not save deletion: "+err.message)}
+        });
+        line.appendChild(remove);root.appendChild(line);
       });
     }
     document.getElementById("kilnDriftPanel").addEventListener("toggle",renderDrift);

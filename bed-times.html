@@ -550,6 +550,12 @@
 #btUnlock{padding:9px 13px;border-radius:7px;background:#426b9d;color:white}
 #btUnlockStatus{font-size:12px;margin:5px 0;color:#e8c76e}
 .bt-unlock-row :disabled{opacity:.5}
+</style><style>
+.kiln-drift{border:1px solid #43516e;border-radius:7px;padding:7px;margin:5px 0;font-size:12px;color:#e4e9f3}
+.kiln-drift summary{cursor:pointer;font-weight:800;color:#e3bd69}
+#kilnDriftRows{max-height:180px;overflow:auto;margin:7px 0}
+.kiln-drift-entry{padding:6px 2px;border-bottom:1px solid #35435a;font-variant-numeric:tabular-nums}
+#kilnDriftExport{font-size:12px;min-height:30px;padding:4px 10px}
 </style></head>
 <body>
   <div class="app">
@@ -596,6 +602,7 @@
         <button class="ghost" id="kilnAdd" type="button">+ Kiln</button>
         <button class="ghost" id="kilnSave" type="button">Save</button>
       </div>
+      <details id="kilnDriftPanel" class="kiln-drift"><summary>Kiln Time Drift History</summary><div id="kilnDriftRows"></div><button type="button" id="kilnDriftExport">Download Drift CSV</button></details>
       <div class="row">
         <label class="k" for="bcount">Beds</label>
         <select class="pick" id="bcount"></select>
@@ -676,6 +683,29 @@
     })();
     const STORE = "bedTimes.v5";
     const KILNS_KEY = "bedTimes.kilns.v1";
+    const DRIFT_KEY = "bedTimes.kilnDrift.v1";
+    function readDrift(){try{const d=JSON.parse(localStorage.getItem(DRIFT_KEY)||"{}");return d&&typeof d==="object"&&!Array.isArray(d)?d:{}}catch(e){return {}}}
+    function writeDrift(d){localStorage.setItem(DRIFT_KEY,JSON.stringify(d))}
+    function renderDrift(){
+      const root=document.getElementById("kilnDriftRows");if(!root)return;
+      root.replaceChildren();const entries=readDrift()[String(activeKiln)]||[];
+      if(!entries.length){root.textContent="No timing corrections recorded for Kiln "+activeKiln+".";return}
+      entries.slice().reverse().slice(0,60).forEach(e=>{
+        const line=document.createElement("div");line.className="kiln-drift-entry";
+        const sign=e.driftSeconds>0?"+":"";
+        const rate=e.bedsPassed>0?(e.driftSeconds/e.bedsPassed).toFixed(1)+" sec/bed":"Not enough beds";
+        line.textContent=new Date(e.recordedAt).toLocaleString()+" | "+sign+Math.round(e.driftSeconds)+" sec "+(e.driftSeconds>0?"late":e.driftSeconds<0?"early":"on time")+" | "+e.bedsPassed+" beds | "+rate;
+        root.appendChild(line);
+      });
+    }
+    document.getElementById("kilnDriftPanel").addEventListener("toggle",renderDrift);
+    document.getElementById("kilnDriftExport").addEventListener("click",()=>{
+      const rows=[["Kiln","Recorded at","Predicted OUT","Actual OUT","Drift seconds","Beds passed","Seconds per bed"]];
+      const all=readDrift();
+      for(const [kiln,entries] of Object.entries(all))for(const e of entries)rows.push([kiln,e.recordedAt,e.predictedOut,e.actualOut,e.driftSeconds,e.bedsPassed,e.bedsPassed?e.driftSeconds/e.bedsPassed:""]);
+      const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+      const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));const a=document.createElement("a");a.href=url;a.download="kiln-time-drift.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
     const KILN_ACTIVE = "bedTimes.kilnActive.v1";
     const kilnSelect = document.getElementById("kilnSelect");
     let kilnNames = [];
@@ -1293,11 +1323,27 @@
       buildFromInput(true);
     }
 
-    function buildFromInput(keepPage) {
+    function buildFromInput(keepPage, recordCorrection = false) {
       const base = parseStartFromInput();
       if (!base) return;
+      const newInterval=intervalFromInputs();
+      if(recordCorrection && start && intervalMs===newInterval && Number.isFinite(intervalMs) && intervalMs>0){
+        // Match the observed OUT clock time to the closest predicted bed event.
+        const observed=base.getTime(),old=start.getTime();
+        const bedIndex=Math.max(0,Math.round((observed-old)/intervalMs));
+        const predicted=old+bedIndex*intervalMs;
+        const difference=(observed-predicted)/1000;
+        const all=readDrift(),key=String(activeKiln),entries=Array.isArray(all[key])?all[key]:[];
+        const previous=entries.length?entries[entries.length-1]:null;
+        const bedsPassed=previous?Math.max(0,Math.round((observed-Date.parse(previous.actualOut))/intervalMs)):0;
+        if(Math.abs(difference)>=30){
+          entries.push({recordedAt:new Date().toISOString(),predictedOut:new Date(predicted).toISOString(),actualOut:base.toISOString(),driftSeconds:difference,bedsPassed});
+          all[key]=entries.slice(-500);try{writeDrift(all)}catch(e){console.warn("Drift history could not be saved",e)}
+          renderDrift();
+        }
+      }
       start = base;
-      intervalMs = intervalFromInputs();
+      intervalMs = newInterval;
       if (!keepPage) page = 0;
       spoken = {};
       lastOrigin = null;
@@ -1426,7 +1472,7 @@
     go.addEventListener("click", () => {
       unlockAudio();
       try { window.speechSynthesis.getVoices(); } catch (e) {}
-      buildFromInput();
+      buildFromInput(false,true);
     });
     document.getElementById("testbtn").addEventListener("click", () => {
       if (muted) return;
@@ -1493,13 +1539,13 @@
       setControlsOpen(!document.querySelector(".app").classList.contains("show-more"));
     });
     document.getElementById("closemore").addEventListener("click", () => setControlsOpen(false));
-    ["change", "input", "blur"].forEach((ev) => {
-      tin.addEventListener(ev, () => { paintAmPmSet(); buildFromInput(); });
-    });
+    tin.addEventListener("input",paintAmPmSet);
+    tin.addEventListener("change",paintAmPmSet);
+    // Set commits the correction; typing and blurring alone never modify the schedule.
     amset.addEventListener("click", () => applyAmPm(true));
     pmset.addEventListener("click", () => applyAmPm(false));
-    ih.addEventListener("change", buildFromInput);
-    im.addEventListener("change", buildFromInput);
+    ih.addEventListener("change", () => buildFromInput(false,false));
+    im.addEventListener("change", () => buildFromInput(false,false));
     document.getElementById("voicelbl").addEventListener("click", () => {
       document.getElementById("voicesheet").classList.add("on");
     });

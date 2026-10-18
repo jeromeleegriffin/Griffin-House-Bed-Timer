@@ -31,3 +31,6 @@ Open the `android/` directory in Android Studio, install Android SDK 35, sync Gr
 7. Plan migration of existing web schedule and product data before release.
 
 Do not deploy or replace the live website with this prototype.
+
+## Phone recovery build
+This branch is retained as the native-alarm baseline. Build and device verification are required before relying on its alarms. The live website is unchanged.

@@ -684,6 +684,7 @@
         + "|" + String(v.lang || "").toLowerCase();
     }
     function fillDeviceVoices() {
+      if (window.BedNative) return;
       if (!window.speechSynthesis) return;
       const all = window.speechSynthesis.getVoices() || [];
       const uniq = [];
@@ -1055,6 +1056,17 @@
       } catch (e) {}
     }
 
+    function fillNativeVoices(json) {
+      try {
+        const voices=JSON.parse(json),keep=vpick.value||savedVoiceId;
+        vpick.replaceChildren();
+        voices.forEach(v=>{const o=document.createElement("option");o.value=v.id;o.textContent=v.label;vpick.appendChild(o)});
+        if(keep&&[...vpick.options].some(o=>o.value===keep))vpick.value=keep;
+        if(!vpick.value&&vpick.options.length)vpick.selectedIndex=0;
+        syncNativeAlarm();
+      }catch(e){console.warn("Native voice list unavailable",e)}
+    }
+    window.bedTimerNativeVoices=fillNativeVoices;
     function nativeAlarmTest() {
       if (!window.BedNative) { alert("Native Android alarm bridge is unavailable."); return; }
       try { window.BedNative.testAlarm(); } catch(e) { alert("Native alarm test failed: "+e); }
@@ -1069,7 +1081,7 @@
         const beds = Array.from({length:bedCount}, (_, i) => Number.isFinite(bedSeq[i]) ? bedSeq[i] : -1);
         window.BedNative.schedule(JSON.stringify({
           start:start.getTime(), interval:intervalMs, count:bedCount, beds,
-          alarmId:apick.value, personaId:ppick.value, sayText:saytext.value
+          alarmId:apick.value, personaId:ppick.value, sayText:saytext.value, voiceId:vpick.value
         }));
       } catch(e) { console.warn("Native alarm synchronization failed", e); }
     }
@@ -1392,7 +1404,7 @@
     document.getElementById("playvoice").addEventListener("click", () => {
       if (muted) return;
       unlockAudio();
-      speakPhrase();
+      if(window.BedNative){window.BedNative.previewVoice(saytext.value,ppick.value,vpick.value);}else{speakPhrase();}
     });
     document.getElementById("chips").addEventListener("click", (e) => {
       const b = e.target.closest("[data-say]");
@@ -1408,7 +1420,8 @@
     fwd.addEventListener("click", () => shiftPage(1));
     
 
-    if (window.speechSynthesis) {
+    if (window.BedNative) {window.BedNative.listVoices();}
+    if (!window.BedNative && window.speechSynthesis) {
       fillDeviceVoices();
       window.speechSynthesis.onvoiceschanged = fillDeviceVoices;
     }

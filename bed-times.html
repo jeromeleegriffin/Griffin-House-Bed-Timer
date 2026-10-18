@@ -1454,11 +1454,7 @@
             + '<div class="count-val" id="side-count">—</div>';
           slot.appendChild(box);
         }
-        slot.addEventListener("click", (e) => {
-          // Allow the whole bed row to open its number editor, except interactive controls.
-          if (e.target.closest("button, input, select, a, .count-box")) return;
-          openBedEdit(abs, num);
-        });
+        slot.addEventListener("click", (e) => { if (e.target.closest(".bedtag")) openBedEdit(abs, num); });
         timesEl.appendChild(slot);
       });
     }
@@ -1661,7 +1657,7 @@
     })();
   </script>
 <div id="productSheet" role="dialog" aria-modal="true" aria-label="Bed products"><div class="bt-dialog">
-<h2 id="btProductTitle">Bed products</h2><div id="btProductRows"></div>
+<h2 id="btProductTitle">Bed products</h2><button type="button" id="btEditBedNumber">Edit bed number</button><div id="btProductRows"></div>
 <button type="button" id="btAdd">+ Add product</button><div class="bt-total" id="btProductTotal">TOTAL 0</div>
 <button type="button" id="btSave">Save</button><button type="button" id="btCancel">Cancel</button>
 </div></div>
@@ -1697,12 +1693,14 @@ function draw(){
  });updateTotal();applyProductLock();
 }
 function updateTotal(){byId("btProductTotal").textContent="TOTAL PIECES: "+sum(rows).toLocaleString()}
-function openProduct(n){
+let selectedAbs=null;
+function openProduct(n,abs){
  if(!Number.isFinite(n))return;
- selected=String(n);rows=(products[selected]||[]).map(x=>({...x}));
+ selected=String(n);selectedAbs=abs;rows=(products[selected]||[]).map(x=>({...x}));
  byId("btProductTitle").textContent="BED "+selected;
  draw();byId("productSheet").classList.add("on");
 }
+byId("btEditBedNumber").onclick=()=>{const n=Number(selected);if(!Number.isFinite(selectedAbs))return;close("productSheet");document.getElementById("bedsheet").classList.add("on");document.getElementById("bednumin").value=String(n);pendingAbs=selectedAbs;document.getElementById("bednumin").focus();};
 byId("btAdd").onclick=()=>{if(!unlocked)return;rows.push({code:"",pieces:""});draw()};
 byId("btSave").onclick=()=>{
  if(!unlocked)return;
@@ -1739,7 +1737,7 @@ list.addEventListener("click",e=>{
  if(!slot)return;
  if(tag){e.stopPropagation();return;}
  const num=Number(slot.dataset.num);
- if(Number.isFinite(num)&&slot.dataset.num!=="null"){e.stopPropagation();openProduct(num)}
+ if(Number.isFinite(num)&&slot.dataset.num!=="null"){e.stopPropagation();openProduct(num,Number(slot.dataset.abs))}
 },true);
 function decorate(){
  list.querySelectorAll(".slot").forEach(slot=>{

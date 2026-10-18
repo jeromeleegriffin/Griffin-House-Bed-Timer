@@ -1454,7 +1454,11 @@
             + '<div class="count-val" id="side-count">—</div>';
           slot.appendChild(box);
         }
-        slot.addEventListener("click", (e) => { if (e.target.closest(".bedtag")) openBedEdit(abs, num); });
+        slot.addEventListener("click", (e) => {
+          // Allow the whole bed row to open its number editor, except interactive controls.
+          if (e.target.closest("button, input, select, a, .count-box")) return;
+          openBedEdit(abs, num);
+        });
         timesEl.appendChild(slot);
       });
     }

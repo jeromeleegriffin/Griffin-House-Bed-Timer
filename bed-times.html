@@ -545,12 +545,6 @@
 .bt-proprietary-notice{font-size:14px;font-weight:800;color:#ffd2c9;border:1px solid #985e58;background:#3b2429;border-radius:8px;padding:10px;margin:5px 0 12px}
 #productSheet input:disabled,#productSheet button:disabled{opacity:.35;filter:grayscale(1);cursor:not-allowed}
 </style><style>
-.bt-unlock-row{display:flex;gap:8px;align-items:center;margin:8px 0}
-#btUnlockPassword{min-width:0;flex:1;padding:10px;border-radius:7px;background:#101827;color:white;border:1px solid #6d7991}
-#btUnlock{padding:9px 13px;border-radius:7px;background:#426b9d;color:white}
-#btUnlockStatus{font-size:12px;margin:5px 0;color:#e8c76e}
-.bt-unlock-row :disabled{opacity:.5}
-</style><style>
 .kiln-drift{border:1px solid #43516e;border-radius:7px;padding:7px;margin:5px 0;font-size:12px;color:#e4e9f3}
 .kiln-drift summary{cursor:pointer;font-weight:800;color:#e3bd69}
 #kilnDriftRows{max-height:180px;overflow:auto;margin:7px 0}
@@ -1716,7 +1710,7 @@ byId("productSheet").onclick=e=>{if(e.target.id==="productSheet")close("productS
 function rotation(){
  const root=byId("btRotationRows");root.replaceChildren();let total=0,entered=0;
  // Rotation product totals are also private until the bed-product password is entered.
- if(!unlocked){const msg=document.createElement("p");msg.textContent="Product and piece information is locked. Open a bed and enter the unlock password to view it.";root.appendChild(msg);byId("btRotationTotal").textContent="TOTAL: Locked";byId("rotationSheet").classList.add("on");return;}
+ 
  const count=Number(byId("bcount").value)||0;
  for(let n=1;n<=count;n++){
  const a=products[String(n)];const has=Array.isArray(a)&&a.length>0;const pcs=has?sum(a):0;

@@ -7,6 +7,11 @@ public class MainActivity extends Activity {
   web.addJavascriptInterface(new Object(){
    @JavascriptInterface public void schedule(String json){runOnUiThread(()->{try{org.json.JSONObject o=new org.json.JSONObject(json);org.json.JSONArray a=o.getJSONArray("beds");int[] beds=new int[a.length()];for(int j=0;j<beds.length;j++)beds[j]=a.getInt(j);AlarmScheduler.schedule(MainActivity.this,o.getLong("start"),o.getLong("interval"),o.getInt("count"),beds,o.optString("alarmId","chime"),o.optString("personaId","sexy"),o.optString("sayText","Bed is coming out."));}catch(Exception ignored){}});}
    @JavascriptInterface public void cancel(){runOnUiThread(()->AlarmScheduler.cancel(MainActivity.this));}
+   @JavascriptInterface public void testAlarm(){runOnUiThread(()->{
+    try { Intent play=new Intent(MainActivity.this,AlarmPlaybackService.class);play.putExtra("bed",-1);startForegroundService(play);
+      android.widget.Toast.makeText(MainActivity.this,"Android alarm playback requested",android.widget.Toast.LENGTH_SHORT).show();
+    } catch(Exception e){android.widget.Toast.makeText(MainActivity.this,"Alarm playback failed: "+e.getClass().getSimpleName(),android.widget.Toast.LENGTH_LONG).show();}
+   });}
   },"BedNative");
   WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
   web.setWebViewClient(new WebViewClient(){

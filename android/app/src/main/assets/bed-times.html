@@ -1055,14 +1055,18 @@
       } catch (e) {}
     }
 
+    function nativeAlarmTest() {
+      if (!window.BedNative) { alert("Native Android alarm bridge is unavailable."); return; }
+      try { window.BedNative.testAlarm(); } catch(e) { alert("Native alarm test failed: "+e); }
+    }
     function syncNativeAlarm() {
       if (!window.BedNative) return;
       try {
-        if (muted || !start || !Number.isFinite(intervalMs) || intervalMs < 60000 || !seqReady()) {
+        if (muted || !start || !Number.isFinite(intervalMs) || intervalMs < 60000  ) {
           window.BedNative.cancel();
           return;
         }
-        const beds = Array.from({length:bedCount}, (_, i) => bedSeq[i]);
+        const beds = Array.from({length:bedCount}, (_, i) => Number.isFinite(bedSeq[i]) ? bedSeq[i] : -1);
         window.BedNative.schedule(JSON.stringify({
           start:start.getTime(), interval:intervalMs, count:bedCount, beds,
           alarmId:apick.value, personaId:ppick.value, sayText:saytext.value
@@ -1301,6 +1305,11 @@
       unlockAudio();
       speakBed();
     });
+    const nativeTestButton=document.createElement("button");
+    nativeTestButton.type="button";nativeTestButton.textContent="TEST ANDROID CHIME + VOICE";
+    nativeTestButton.style.cssText="margin:8px 0;padding:12px;min-height:44px;background:#426b9d;color:white;border-radius:8px";
+    nativeTestButton.addEventListener("click",nativeAlarmTest);
+    document.getElementById("testbtn").insertAdjacentElement("afterend",nativeTestButton);
     mutebtn.addEventListener("click", () => {
       muted = !muted;
       if (muted) {

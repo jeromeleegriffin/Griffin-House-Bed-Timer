@@ -1663,7 +1663,7 @@
     })();
   </script>
 <div id="productSheet" role="dialog" aria-modal="true" aria-label="Bed products"><div class="bt-dialog">
-<h2 id="btProductTitle">Bed products</h2><p class="bt-proprietary-notice" role="note">Ask to unlock possible proprietary information.</p><div class="bt-unlock-row"><input id="btUnlockPassword" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Unlock password" aria-label="Unlock password" /><button type="button" id="btUnlock">Unlock</button></div><p id="btUnlockStatus" role="status" aria-live="polite"></p><div id="btProductRows"></div>
+<h2 id="btProductTitle">Bed products</h2><div id="btProductRows"></div>
 <button type="button" id="btAdd">+ Add product</button><div class="bt-total" id="btProductTotal">TOTAL 0</div>
 <button type="button" id="btSave">Save</button><button type="button" id="btCancel">Cancel</button>
 </div></div>
@@ -1679,13 +1679,12 @@ const byId=id=>document.getElementById(id);
 const safeNum=n=>Number.isFinite(Number(n))&&Number(n)>=0?Math.floor(Number(n)):0;
 const sum=a=>a.reduce((n,r)=>n+safeNum(r.pieces),0);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(products));return true}catch(e){alert("Could not save bed products. Check browser storage.");return false}};
-const close=id=>{byId(id).classList.remove("on");if(id==="productSheet"){unlocked=false;rows=[];byId("btProductRows").replaceChildren();byId("btProductTotal").textContent="TOTAL PIECES: Locked";byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";}};
-let unlocked=false;
+const close=id=>{byId(id).classList.remove("on");if(id==="productSheet"){rows=[];byId("btProductRows").replaceChildren();}};
+let unlocked=true;
 function applyProductLock(){
- byId("btProductRows").hidden=!unlocked;
- byId("btProductTotal").hidden=!unlocked;
- byId("productSheet").querySelectorAll("#btProductRows input,#btProductRows button,#btAdd,#btSave").forEach(el=>{el.disabled=!unlocked;el.setAttribute("aria-disabled",String(!unlocked))});
- byId("btUnlockPassword").disabled=unlocked;byId("btUnlock").disabled=unlocked;
+ byId("btProductRows").hidden=false;
+ byId("btProductTotal").hidden=false;
+ byId("productSheet").querySelectorAll("#btProductRows input,#btProductRows button,#btAdd,#btSave").forEach(el=>{el.disabled=false;el.setAttribute("aria-disabled","false")});
 }
 function draw(){
  const root=byId("btProductRows");root.replaceChildren();
@@ -1703,19 +1702,9 @@ function updateTotal(){byId("btProductTotal").textContent="TOTAL PIECES: "+sum(r
 function openProduct(n){
  if(!Number.isFinite(n))return;
  selected=String(n);rows=(products[selected]||[]).map(x=>({...x}));
- unlocked=false;byId("btUnlockPassword").value="";byId("btUnlockStatus").textContent="";byId("btProductTitle").textContent="BED "+selected;byId("btProductRows").replaceChildren();byId("btProductTotal").textContent="TOTAL PIECES: Locked";applyProductLock();byId("productSheet").classList.add("on");
+ byId("btProductTitle").textContent="BED "+selected;
+ draw();byId("productSheet").classList.add("on");
 }
-byId("btUnlock").onclick=()=>{
- if(byId("btUnlockPassword").value==="1989"){
-  unlocked=true;draw();byId("btUnlockPassword").value="";
-  byId("btUnlockStatus").textContent="Unlocked for this session. Do not enter confidential company information.";
-  applyProductLock();
- }else{
-  byId("btUnlockPassword").value="";
-  byId("btUnlockStatus").textContent="Incorrect password.";
- }
-};
-byId("btUnlockPassword").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();byId("btUnlock").click()}});
 byId("btAdd").onclick=()=>{if(!unlocked)return;rows.push({code:"",pieces:""});draw()};
 byId("btSave").onclick=()=>{
  if(!unlocked)return;

@@ -1305,11 +1305,6 @@
       unlockAudio();
       speakBed();
     });
-    const nativeTestButton=document.createElement("button");
-    nativeTestButton.type="button";nativeTestButton.textContent="TEST ANDROID CHIME + VOICE";
-    nativeTestButton.style.cssText="margin:8px 0;padding:12px;min-height:44px;background:#426b9d;color:white;border-radius:8px";
-    nativeTestButton.addEventListener("click",nativeAlarmTest);
-    document.getElementById("testbtn").insertAdjacentElement("afterend",nativeTestButton);
     mutebtn.addEventListener("click", () => {
       muted = !muted;
       if (muted) {

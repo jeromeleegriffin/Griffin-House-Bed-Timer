@@ -1636,7 +1636,7 @@ observer.observe(list,{childList:true});decorate();
    if(!object(data)||data.format!=="griffin-bed-timer-backup"||data.version!==VERSION)throw Error("This is not a compatible Bed Timer backup");
    const schedule=validateSchedule(data.schedule),products=validateProducts(data.products);
    const count=Object.keys(products).length;
-   if(!confirm("Import "+schedule.bedCount+"-bed schedule and product entries for "+count+" beds? This replaces the data saved in this app. Continue?"))return;
+   if(!confirm("Import "+schedule.bedCount+"-bed schedule and product entries for "+count+" beds? This replaces the data saved in this app. Continue?")){status.textContent="Import canceled. Existing data unchanged.";return;}
    const priorSchedule=localStorage.getItem(KEY),priorProducts=localStorage.getItem(PRODUCTS);
    try{
     localStorage.setItem(KEY,JSON.stringify(schedule));
@@ -1648,7 +1648,7 @@ observer.observe(list,{childList:true});decorate();
    }
    status.textContent="Import saved. Reloading to apply schedule and alarms.";
    location.reload();
-  }catch(e){status.textContent="Import not applied: "+e.message}
+  }catch(e){status.textContent="Import not applied: "+e.message;alert(status.textContent)}
  };
 })();
 </script>

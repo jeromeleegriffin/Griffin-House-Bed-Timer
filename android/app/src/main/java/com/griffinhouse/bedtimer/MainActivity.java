@@ -36,6 +36,14 @@ public class MainActivity extends Activity {
   web.setWebViewClient(new WebViewClient(){
    @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return loader.shouldInterceptRequest(request.getUrl());}
   });
+  web.setWebChromeClient(new WebChromeClient(){
+   @Override public boolean onJsConfirm(WebView view,String url,String message,final JsResult result){
+    new AlertDialog.Builder(MainActivity.this).setMessage(message).setPositiveButton("Import",(d,w)->result.confirm()).setNegativeButton("Cancel",(d,w)->result.cancel()).setOnCancelListener(d->result.cancel()).show();return true;
+   }
+   @Override public boolean onJsAlert(WebView view,String url,String message,final JsResult result){
+    new AlertDialog.Builder(MainActivity.this).setMessage(message).setPositiveButton("OK",(d,w)->result.confirm()).setOnCancelListener(d->result.confirm()).show();return true;
+   }
+  });
   web.loadUrl("https://appassets.androidplatform.net/assets/bed-times.html");
   if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},42);
   if(Build.VERSION.SDK_INT>=31){AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);if(!am.canScheduleExactAlarms()){try{startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,Uri.parse("package:"+getPackageName())));}catch(Exception ignored){}}}

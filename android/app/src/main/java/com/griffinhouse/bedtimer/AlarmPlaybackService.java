@@ -27,7 +27,7 @@ public final class AlarmPlaybackService extends Service implements TextToSpeech.
  private static final double[] GAINS={.18,.16,.17,.2,.15,.16,.17,.14};
  private TextToSpeech tts;
  private final Handler main=new Handler(Looper.getMainLooper());
- private String phrase="Bed is coming out.", persona="sexy";
+ private String phrase="Bed is coming out.", persona="sexy", voiceId="";
  private volatile boolean stopped=false;
  private int request=0;
  @Override public IBinder onBind(Intent intent){return null;}
@@ -35,14 +35,18 @@ public final class AlarmPlaybackService extends Service implements TextToSpeech.
   if(intent==null){stopSelf();return START_NOT_STICKY;}
   if(tts!=null){tts.stop();tts.shutdown();tts=null;}
   stopped=false;request=startId;
+  boolean preview=intent.getBooleanExtra("previewVoiceOnly",false);
   String alarm="chime";
   try{
    JSONObject o=new JSONObject(getSharedPreferences(AlarmScheduler.PREF,0).getString(AlarmScheduler.KEY,"{}"));
    phrase=o.optString("sayText","Bed is coming out.").trim();
    if(phrase.length()>160)phrase=phrase.substring(0,160);
    persona=o.optString("personaId","sexy");
-   alarm=o.optString("alarmId","chime");
+   alarm=o.optString("alarmId","chime");voiceId=o.optString("voiceId","");
   }catch(Exception ignored){}
+  if(preview){phrase=intent.getStringExtra("phrase");if(phrase==null)phrase="Bed is coming out.";
+    if(phrase.length()>160)phrase=phrase.substring(0,160);
+    persona=intent.getStringExtra("persona");voiceId=intent.getStringExtra("voiceId");}
   NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
   NotificationChannel channel=new NotificationChannel(CHANNEL,"Bed Timer playback",NotificationManager.IMPORTANCE_LOW);
   channel.setSound(null,null);channel.enableVibration(false);nm.createNotificationChannel(channel);
@@ -54,6 +58,7 @@ public final class AlarmPlaybackService extends Service implements TextToSpeech.
    .setCategory(Notification.CATEGORY_ALARM).setOngoing(true).build();
   startForeground(203,notification);
   final int choice=choice(alarm);
+  if(preview){tts=new TextToSpeech(this,this);main.postDelayed(()->{if(!stopped)finish();},15000);return START_NOT_STICKY;}
   new Thread(()->{
    try{play(choice);}catch(Exception ignored){}
    main.post(()->{
@@ -94,6 +99,7 @@ public final class AlarmPlaybackService extends Service implements TextToSpeech.
   if(stopped)return;
   if(status!=TextToSpeech.SUCCESS||tts==null){finish();return;}
   tts.setLanguage(Locale.US);
+  if(voiceId!=null&&!voiceId.isEmpty())try{for(android.speech.tts.Voice v:tts.getVoices()){if(v.getName().equals(voiceId)){tts.setVoice(v);break;}}}catch(Exception ignored){}
   float pitch=1.05f,rate=.92f;
   switch(persona){
    case "calm":pitch=.99f;rate=.90f;break;

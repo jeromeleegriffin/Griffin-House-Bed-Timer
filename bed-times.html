@@ -487,13 +487,9 @@
 #btNav{display:flex;gap:8px;justify-content:space-between;margin:5px 0}
 #btNav button{flex:1;min-height:32px;padding:3px 8px;font-size:15px;border-radius:9px}
 </style><style>
-/* Always-visible alarm control on the main timer screen */
-.bed-alarm-main{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 10px;padding:10px 12px;border:1px solid #92754b;border-radius:12px;background:#1c2639;box-sizing:border-box}
-.bed-alarm-status{font-weight:800;font-size:15px;color:#aee5ba;letter-spacing:.2px}
-.bed-alarm-status.off{color:#ffc1b7}
-#mutebtn{font-size:14px;font-weight:800;padding:11px 12px;min-height:44px;border-radius:9px;background:#8b2d2d;color:white;border:1px solid #e49a89;white-space:nowrap;cursor:pointer}
-#mutebtn.alarm-off{background:#25613b;border-color:#83cda0;color:white}
-@media(max-width:350px){.bed-alarm-main{padding:8px;gap:6px}.bed-alarm-status{font-size:13px}#mutebtn{font-size:12px;padding:10px 8px}}
+header{position:relative}
+#mutebtn{position:absolute;right:0;top:clamp(22px,3.2vh,32px);width:clamp(88px,25vw,112px);height:44px;min-height:44px;padding:3px 5px;border-radius:9px;border:1px solid #a26c70;background:#65333a;color:#fff;font-size:clamp(10px,1.5vh,13px);font-weight:800;letter-spacing:.02em;z-index:1}
+#mutebtn.is-off{background:#285a46;border-color:#57a67e}
 </style><style>
 /* Phone pixel correction: compact main alarm and in-row OUT detail */
 .bed-alarm-main{margin:3px 0 5px;padding:3px 9px;gap:8px;border-radius:8px;min-height:36px}
@@ -557,7 +553,7 @@
   <div class="app">
     <header>
       <div class="julian-label">Julian Date Number</div>
-      <div class="julian-num" id="julian">—</div>
+      <div class="julian-num" id="julian">—</div><button id="mutebtn" type="button" aria-pressed="false" aria-label="Turn off bed alarm">ALARM ON</button>
       <div class="now-line" id="nowline">—</div>
     </header>
     <div class="until-line" id="until"></div>
@@ -573,7 +569,7 @@
         <button id="nowbtn" type="button">Now</button>
       </div>
     </div>
-    <div class="bed-alarm-main" role="group" aria-label="Bed alarm controls"><div class="bed-alarm-status" id="alarmstatus" role="status" aria-live="polite">Bed Alarm ON</div><button id="mutebtn" type="button" aria-pressed="false">Turn Off Alarm</button></div>
+    
     <div class="bid-calc">
       <button id="bidCalcToggle" type="button" aria-expanded="false" aria-controls="bidCalcBody">Calculator ▾</button>
       <div id="bidCalcBody" hidden>
@@ -1070,12 +1066,10 @@
     }
 
     function paintMute() {
-      mutebtn.textContent = muted ? "Turn On Alarm" : "Turn Off Alarm";
-      mutebtn.setAttribute("aria-pressed", String(muted));
-      const status = document.getElementById("alarmstatus");
-      status.textContent = muted ? "Bed Alarm OFF" : "Bed Alarm ON";
-      status.classList.toggle("off", muted);
-      mutebtn.classList.toggle("alarm-off", muted);
+      mutebtn.textContent=muted?"ALARM OFF":"ALARM ON";
+      mutebtn.setAttribute("aria-label",muted?"Turn on bed alarm":"Turn off bed alarm");
+      mutebtn.setAttribute("aria-pressed",String(muted));
+      mutebtn.classList.toggle("is-off",muted);
     }
 
     function buzz(on) {

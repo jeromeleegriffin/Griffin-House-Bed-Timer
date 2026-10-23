@@ -1448,7 +1448,11 @@ header{position:relative}
             + '<div class="count-val" id="side-count">—</div>';
           slot.appendChild(box);
         }
-        slot.addEventListener("click", (e) => { if (e.target.closest(".bedtag")) openBedEdit(abs, num); });
+        slot.addEventListener("click", (e) => {
+          // The whole bed row is an edit target; product details remain available from the product sheet.
+          if (e.target.closest("button, input, select, a")) return;
+          openBedEdit(abs, num);
+        });
         timesEl.appendChild(slot);
       });
     }

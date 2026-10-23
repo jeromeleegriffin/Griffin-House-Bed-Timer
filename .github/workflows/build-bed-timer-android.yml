@@ -10,7 +10,7 @@ jobs:
   debug-apk:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -62,3 +62,9 @@ jobs:
           name: Griffin-Bed-Timer-v0.7-no-ocr-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish public Android beta APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create bedtimer-android-v0.8-beta android/app/build/outputs/apk/debug/app-debug.apk#Griffin-Bed-Timer-Android-Beta.apk --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "Griffin Bed Timer Android beta" --notes "Android beta with native scheduled alarms and voice selection. Test on your device before relying on work alarms. Back up data before uninstalling older versions." --prerelease

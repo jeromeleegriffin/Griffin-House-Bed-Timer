@@ -488,18 +488,18 @@
 #btNav button{flex:1;min-height:32px;padding:3px 8px;font-size:15px;border-radius:9px}
 </style><style>
 header{position:relative}
-#mutebtn{position:absolute;right:0;top:0;width:clamp(76px,21vw,94px);height:28px;min-height:28px;padding:2px 5px;border-radius:6px;border:1px solid #a26c70;background:#65333a;color:#fff;font-size:10px;font-weight:800;letter-spacing:0;line-height:1.1;z-index:1}
+#mutebtn{position:absolute;left:0;right:auto;top:clamp(23px,3.2vh,32px);width:82px;height:30px;min-height:30px;padding:3px 5px;border-radius:6px;border:1px solid #a26c70;background:#65333a;color:#fff;font-size:10px;font-weight:800;letter-spacing:0;line-height:1.1;z-index:1;box-sizing:border-box}
 #mutebtn.is-off{background:#285a46;border-color:#57a67e}
 </style><style>
 /* Phone pixel correction: compact main alarm and in-row OUT detail */
 .bed-alarm-main{margin:3px 0 5px;padding:3px 9px;gap:8px;border-radius:8px;min-height:36px}
 .bed-alarm-status{font-size:12px;letter-spacing:0}
-#mutebtn{font-size:12px;min-height:30px;padding:5px 10px;border-radius:6px}
+
 .slot .meta{position:relative;min-width:0}
 .slot .next-out{position:static;font-size:clamp(9px,1.12vh,12px);line-height:1.1;margin-top:1px;white-space:nowrap;opacity:.8}
 .slot .when{line-height:1}
 .slot .dow{line-height:1}
-@media(max-width:350px){.bed-alarm-main{padding:3px 6px}.bed-alarm-status{font-size:11px}#mutebtn{font-size:11px;padding:4px 7px}}
+@media(max-width:350px){.bed-alarm-main{padding:3px 6px}.bed-alarm-status{font-size:11px}}
 </style><style>
 /* Collapsible bid calculator: closed by default, no timer interference */
 .bid-calc{margin:2px 0 5px}
@@ -524,8 +524,8 @@ header{position:relative}
 .slot .next-out{font-size:clamp(9px,1vh,11px);line-height:1;margin-top:0}
 </style><style>
 /* Owner adjustment: alarm action button approximately 35% smaller */
-#mutebtn{font-size:10px;min-height:26px;padding:3px 7px;border-radius:5px}
-@media(max-width:350px){#mutebtn{font-size:10px;min-height:26px;padding:3px 6px}}
+
+@media(max-width:350px){}
 </style><style>
 /* Keep OUT in the small date header, not as a third row that overlaps the next bed */
 .slot .dow{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0}

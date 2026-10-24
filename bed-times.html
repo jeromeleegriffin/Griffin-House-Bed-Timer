@@ -685,9 +685,10 @@ header{position:relative}
       if(!entries.length){root.textContent="No timing corrections recorded for Kiln "+activeKiln+".";return}
       entries.slice().reverse().slice(0,60).forEach(e=>{
         const line=document.createElement("div");line.className="kiln-drift-entry";
-        const sign=e.driftSeconds>0?"+":"";
-        const rate=e.bedsPassed>0?(e.driftSeconds/e.bedsPassed).toFixed(1)+" sec/bed":"Not enough beds";
-        line.textContent=new Date(e.recordedAt).toLocaleString()+" | "+sign+Math.round(e.driftSeconds)+" sec "+(e.driftSeconds>0?"late":e.driftSeconds<0?"early":"on time")+" | "+e.bedsPassed+" beds | "+rate;
+        const minutes=e.driftSeconds/60;
+        const sign=minutes>0?"+":"";
+        const rate=e.bedsPassed>0?(minutes/e.bedsPassed).toFixed(1)+" min/bed":"Not enough beds";
+        line.textContent=new Date(e.recordedAt).toLocaleString()+" | "+sign+minutes.toFixed(1)+" min "+(minutes>0?"late":minutes<0?"early":"on time")+" | "+e.bedsPassed+" beds | "+rate;
         const remove=document.createElement("button");
         remove.type="button";remove.className="kiln-drift-delete";remove.textContent="Delete Record";
         remove.setAttribute("aria-label","Delete this drift record");
@@ -725,9 +726,9 @@ header{position:relative}
       else{renderDrift();alert("Drift record removed. Previous timer setting was not available to restore; check the schedule before relying on it.")}
     });
     document.getElementById("kilnDriftExport").addEventListener("click",()=>{
-      const rows=[["Kiln","Recorded at","Predicted OUT","Actual OUT","Drift seconds","Beds passed","Seconds per bed"]];
+      const rows=[["Kiln","Recorded at","Predicted OUT","Actual OUT","Drift minutes","Beds passed","Minutes per bed"]];
       const all=readDrift();
-      for(const [kiln,entries] of Object.entries(all))for(const e of entries)rows.push([kiln,e.recordedAt,e.predictedOut,e.actualOut,e.driftSeconds,e.bedsPassed,e.bedsPassed?e.driftSeconds/e.bedsPassed:""]);
+      for(const [kiln,entries] of Object.entries(all))for(const e of entries)rows.push([kiln,e.recordedAt,e.predictedOut,e.actualOut,(e.driftSeconds/60).toFixed(2),e.bedsPassed,e.bedsPassed?(e.driftSeconds/60/e.bedsPassed).toFixed(2):""]);
       const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
       const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));const a=document.createElement("a");a.href=url;a.download="kiln-time-drift.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     });

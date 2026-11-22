@@ -1436,20 +1436,24 @@ header{position:relative}
 
         const meta = document.createElement("div");
         meta.className = "meta";
-        // Show the next upcoming OUT for this bed. Future rows are already
-        // the upcoming rotation, so never add a rotation to those times.
-        const rotationMs = bedCount * intervalMs;
-        const rotationsAhead = Math.max(0, Math.ceil((now.getTime() - d.getTime()) / rotationMs));
-        const nextOut = new Date(d.getTime() + rotationsAhead * rotationMs);
-        const nextOutDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][nextOut.getDay()];
+        // Upcoming rows already show their OUT time in large type.
+        // Only past rows get a small label for their next future rotation.
+        let nextOutLabel = "";
+        if (d.getTime() < now.getTime()) {
+          const rotationMs = bedCount * intervalMs;
+          const rotationsAhead = Math.max(1, Math.ceil((now.getTime() - d.getTime()) / rotationMs));
+          const nextOut = new Date(d.getTime() + rotationsAhead * rotationMs);
+          const nextOutDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][nextOut.getDay()];
+          nextOutLabel = '<span class="next-out">OUT ' + nextOutDay + ' ' + fmtTime(nextOut) + '</span>';
+        }
         meta.innerHTML = '<div class="dow"><span>J' + String(dayOfYear(d)).padStart(3, "0")
-          + "  ·  " + fmtDow(d) + '</span><span class="next-out">OUT ' + nextOutDay + ' ' + fmtTime(nextOut) + '</span></div>'
+          + "  ·  " + fmtDow(d) + '</span>' + nextOutLabel + '</div>'
           + '<div class="when"><span class="clock">' + fmtClock(d) + '</span><span class="ampm ' + (d.getHours() < 12 ? "am" : "pm") + '">' + fmtAmPm(d)
           + '</span>' + (num == null ? '<span class="bedtag empty">Bed #</span>' : '<span class="bedtag">Bed #' + num + "</span>") + "</div>";
         slot.appendChild(meta);
 
         // The countdown belongs only to the actual next upcoming bed.
-        // Past/future navigation pages still show their own scheduled OUT times.
+        // Other pages show only the scheduled rows (with past-bed next OUT labels).
         if (i === 0 && page === 0) {
           const box = document.createElement("div");
           box.className = "count-box";

@@ -1436,9 +1436,11 @@ header{position:relative}
 
         const meta = document.createElement("div");
         meta.className = "meta";
-        // Each row shows the next OUT for the same bed on the following rotation.
-        // Derive it from this row's scheduled time rather than the current clock.
-        const nextOut = new Date(d.getTime() + bedCount * intervalMs);
+        // Show the next upcoming OUT for this bed. Future rows are already
+        // the upcoming rotation, so never add a rotation to those times.
+        const rotationMs = bedCount * intervalMs;
+        const rotationsAhead = Math.max(0, Math.ceil((now.getTime() - d.getTime()) / rotationMs));
+        const nextOut = new Date(d.getTime() + rotationsAhead * rotationMs);
         const nextOutDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][nextOut.getDay()];
         meta.innerHTML = '<div class="dow"><span>J' + String(dayOfYear(d)).padStart(3, "0")
           + "  ·  " + fmtDow(d) + '</span><span class="next-out">OUT ' + nextOutDay + ' ' + fmtTime(nextOut) + '</span></div>'

@@ -1436,8 +1436,12 @@ header{position:relative}
 
         const meta = document.createElement("div");
         meta.className = "meta";
-        meta.innerHTML = '<div class="dow">J' + String(dayOfYear(d)).padStart(3, "0")
-          + "  ·  " + fmtDow(d) + '</div>'
+        // Each row shows the next OUT for the same bed on the following rotation.
+        // Derive it from this row's scheduled time rather than the current clock.
+        const nextOut = new Date(d.getTime() + bedCount * intervalMs);
+        const nextOutDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][nextOut.getDay()];
+        meta.innerHTML = '<div class="dow"><span>J' + String(dayOfYear(d)).padStart(3, "0")
+          + "  ·  " + fmtDow(d) + '</span><span class="next-out">OUT ' + nextOutDay + ' ' + fmtTime(nextOut) + '</span></div>'
           + '<div class="when"><span class="clock">' + fmtClock(d) + '</span><span class="ampm ' + (d.getHours() < 12 ? "am" : "pm") + '">' + fmtAmPm(d)
           + '</span>' + (num == null ? '<span class="bedtag empty">Bed #</span>' : '<span class="bedtag">Bed #' + num + "</span>") + "</div>";
         slot.appendChild(meta);

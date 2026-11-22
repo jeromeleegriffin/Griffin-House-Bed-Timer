@@ -1446,7 +1446,9 @@ header{position:relative}
           + '</span>' + (num == null ? '<span class="bedtag empty">Bed #</span>' : '<span class="bedtag">Bed #' + num + "</span>") + "</div>";
         slot.appendChild(meta);
 
-        if (i === 0) {
+        // The countdown belongs only to the actual next upcoming bed.
+        // Past/future navigation pages still show their own scheduled OUT times.
+        if (i === 0 && page === 0) {
           const box = document.createElement("div");
           box.className = "count-box";
           box.innerHTML = '<div class="count-label" id="side-lab">Until next</div>'

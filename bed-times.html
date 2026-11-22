@@ -1750,22 +1750,8 @@ list.addEventListener("click",e=>{
  const num=Number(slot.dataset.num);
  if(Number.isFinite(num)&&slot.dataset.num!=="null"){e.stopPropagation();openProduct(num,Number(slot.dataset.abs))}
 },true);
-function decorate(){
- list.querySelectorAll(".slot").forEach(slot=>{
- const meta=slot.querySelector(".meta");if(!meta||meta.querySelector(".next-out"))return;
- const abs=Number(slot.dataset.abs),num=Number(slot.dataset.num);
- if(!Number.isFinite(abs)||!Number.isFinite(num)||slot.dataset.num==="null")return;
- const when=slot.querySelector(".when");if(!when)return;
- const first=window.__btAnchor();
- if(!first)return;
- const next=new Date(first.start+(abs+first.count)*first.interval);
- const line=document.createElement("div");line.className="next-out";
- line.textContent="OUT "+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][next.getDay()]+" "+(next.getHours()%12||12)+":"+String(next.getMinutes()).padStart(2,"0")+(next.getHours()<12?" AM":" PM");
- const dateLine=meta.querySelector(".dow"); if(dateLine){dateLine.appendChild(line)}else{meta.appendChild(line)}
- });
-}
-const observer=new MutationObserver(()=>{observer.disconnect();decorate();observer.observe(list,{childList:true})});
-observer.observe(list,{childList:true});decorate();
+// OUT labels are generated exclusively by renderSlots(), which hides them for upcoming beds.
+
 })();
 </script><script>
 /* Main-screen navigation retained; no camera or OCR code */

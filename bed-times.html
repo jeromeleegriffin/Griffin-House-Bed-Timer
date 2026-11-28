@@ -1753,16 +1753,20 @@ function rotation(){
  const root=byId("btRotationRows");root.replaceChildren();let total=0,entered=0;
  // Rotation product totals are also private until the bed-product password is entered.
  
- const count=Number(byId("bcount").value)||0;
- for(let n=1;n<=count;n++){
- const a=products[String(n)];const has=Array.isArray(a)&&a.length>0;const pcs=has?sum(a):0;
- if(has)entered++;total+=pcs;
+ const count=bedCount;
+ const numbers=Array.from({length:count},(_,i)=>numberForAbs(i)).sort((a,b)=>a===null?1:b===null?-1:a-b);
+ const counted=new Set();
+ let assigned=0;
+ for(const n of numbers){
+ const a=n===null?null:products[String(n)];const has=Array.isArray(a)&&a.length>0;const pcs=has?sum(a):0;
+ if(n!==null)assigned++;
+ if(has&&!counted.has(n)){entered++;total+=pcs;counted.add(n);}
  const row=document.createElement("div");row.className="bt-rotation-row";
- const left=document.createElement("span");left.textContent="Bed "+n;
- const right=document.createElement("span");right.textContent=has?pcs.toLocaleString()+" pcs":"Not entered";
+ const left=document.createElement("span");left.textContent=n===null?"Empty position":"Bed "+n;
+ const right=document.createElement("span");right.textContent=n===null?"Unassigned":has?pcs.toLocaleString()+" pcs":"No products entered";
  row.append(left,right);root.append(row);
  }
- byId("btRotationTotal").textContent="TOTAL: "+total.toLocaleString()+" pieces · "+entered+"/"+count+" beds entered";
+ byId("btRotationTotal").textContent=assigned+"/"+count+" beds assigned · "+entered+" beds with products · "+total.toLocaleString()+" pieces";
  byId("rotationSheet").classList.add("on");
 }
 byId("btRotationClose").onclick=()=>close("rotationSheet");

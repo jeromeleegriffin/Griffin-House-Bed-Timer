@@ -587,7 +587,7 @@ header{position:relative}
     <button id="morebtn" type="button">Controls ▴</button>
     <div class="panel-sheet" id="morepanel">
     <div class="bottom-bar">
-      <button id="closemore" type="button">Close controls ▾</button>
+      <button id="closemore" type="button">Close controls ▾</button><details id="bedInventory"><summary>Bed Inventory</summary><div id="bedInventoryRows" aria-live="polite"></div><label for="bedInventoryAll">All available bed numbers (comma or space separated)</label><textarea id="bedInventoryAll" rows="2" style="width:100%;box-sizing:border-box;font-size:16px"></textarea><button type="button" id="bedInventorySave">Save available beds</button></details>
       <div class="row kiln-row">
         <label class="k" for="kilnSelect">Kiln</label>
         <select class="pick" id="kilnSelect" aria-label="Kiln profile"></select>
@@ -1581,7 +1581,36 @@ header{position:relative}
       tick();
     });
     nowbtn.addEventListener("click", () => { unlockAudio(); goCurrentBeds(); });
+    function renderBedInventory() {
+      const assigned = bedSeq.slice(0, bedCount).filter(Number.isFinite).sort((a,b)=>a-b);
+      const unique = [...new Set(assigned)];
+      const duplicates = unique.filter(n=>assigned.filter(x=>x===n).length>1);
+      const input = document.getElementById("bedInventoryAll");
+      const available = [...new Set(input.value.split(/[\s,;]+/).filter(x=>/^\d+$/.test(x)).map(Number))].sort((a,b)=>a-b);
+      const missing = available.filter(n=>!unique.includes(n));
+      const target = document.getElementById("bedInventoryRows");
+      target.replaceChildren();
+      function line(label, values, color) {
+        const p=document.createElement("p"); p.style.margin="8px 0"; if(color)p.style.color=color;
+        p.textContent=label+values; target.appendChild(p);
+      }
+      line("Assigned ("+assigned.length+"/"+bedCount+"): ",assigned.join(", ")||"None");
+      line("Empty positions: ",bedCount-assigned.length);
+      line("Not on beds: ",available.length?(missing.join(", ")||"None"):"Enter the available bed numbers below.");
+      if(duplicates.length)line("Duplicate numbers: ",duplicates.join(", "),"#e6a23c");
+    }
+    const inventoryInput=document.getElementById("bedInventoryAll");
+    try {inventoryInput.value=localStorage.getItem("btAvailableBeds")||"";}catch(e){}
+    document.getElementById("bedInventorySave").addEventListener("click",()=>{
+      try {localStorage.setItem("btAvailableBeds",inventoryInput.value);}catch(e){}
+      renderBedInventory();
+    });
+    document.getElementById("bedInventory").addEventListener("toggle",renderBedInventory);
+    document.getElementById("morepanel").addEventListener("change",renderBedInventory);
+    document.getElementById("bedsave").addEventListener("click",renderBedInventory);
+    document.getElementById("bedclear").addEventListener("click",renderBedInventory);
     function setControlsOpen(open) {
+      if(open) renderBedInventory();
       const app = document.querySelector(".app");
       app.classList.toggle("show-more", !!open);
       document.getElementById("morebtn").textContent = open ? "Controls ▾" : "Controls ▴";
